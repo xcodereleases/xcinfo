@@ -7,6 +7,7 @@ import Cocoa
 import Colorizer
 import Combine
 import Foundation
+import OlympUs
 import Prompt
 import Run
 import XCUFoundation
@@ -511,6 +512,9 @@ public class xcupdateCore {
         } catch {
             logger.error("Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcupdate.session'.")
         }
+        let olymp = OlympUs(logger: logger)
+        olymp.cleanupCookies()
+        logger.log("Removed stored cookies.")
     }
 
     func runSudo(command: String, password: String, args: [String]) -> Int32 {

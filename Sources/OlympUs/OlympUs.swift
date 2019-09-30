@@ -511,28 +511,6 @@ public class OlympUs {
         return true
     }
 
-    private func storeCookies() {
-        guard let cookies = session.configuration.httpCookieStorage?.cookies else { return }
-
-        let userDefaults = UserDefaults.standard
-        let cookiesArray = cookies.compactMap { $0.properties }
-        userDefaults.set(cookiesArray, forKey: "cookies")
-    }
-
-    private func restoreCookies() {
-        guard let cookieStorage = session.configuration.httpCookieStorage else { return }
-
-        let userDefaults = UserDefaults.standard
-
-        if let cookies = userDefaults.array(forKey: "cookies") as? [[HTTPCookiePropertyKey: Any]] {
-            for cookieProperties in cookies {
-                if let cookie = HTTPCookie(properties: cookieProperties) {
-                    cookieStorage.setCookie(cookie)
-                }
-            }
-        }
-    }
-
     private let downloadAuthURL = URL(string: "https://developer.apple.com/services-account/QH65B2/downloadws/listDownloads.action")!
     public func getDownloadAuth(assets: AuthenticationAssets) -> Future<Void, OlympUsError> {
         Future { promise in
@@ -569,5 +547,36 @@ public class OlympUs {
             request.addValue("application/json", forHTTPHeaderField: "Accept")
         }
         return request
+    }
+}
+
+//    MARK: - Cookies -
+
+extension OlympUs {
+    private func storeCookies() {
+        guard let cookies = session.configuration.httpCookieStorage?.cookies else { return }
+
+        let userDefaults = UserDefaults.standard
+        let cookiesArray = cookies.compactMap { $0.properties }
+        userDefaults.set(cookiesArray, forKey: "cookies")
+    }
+
+    private func restoreCookies() {
+        guard let cookieStorage = session.configuration.httpCookieStorage else { return }
+
+        let userDefaults = UserDefaults.standard
+
+        if let cookies = userDefaults.array(forKey: "cookies") as? [[HTTPCookiePropertyKey: Any]] {
+            for cookieProperties in cookies {
+                if let cookie = HTTPCookie(properties: cookieProperties) {
+                    cookieStorage.setCookie(cookie)
+                }
+            }
+        }
+    }
+
+    public func cleanupCookies() {
+        session.configuration.httpCookieStorage?.removeCookies(since: Date.distantPast)
+        UserDefaults.standard.removeObject(forKey: "cookies")
     }
 }
