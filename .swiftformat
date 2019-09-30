@@ -1,0 +1,5 @@
+--indent 4
+--header "//\n//  Copyright © {year} xcodereleases.com\n//  MIT license - see LICENSE.md\n//"
+--exclude "**/Package.swift"
+--enable isEmpty
+--disable redundantNilInit
