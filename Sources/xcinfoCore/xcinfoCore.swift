@@ -11,6 +11,7 @@ import OlympUs
 import Prompt
 import Run
 import XCIFoundation
+import XCModel
 
 public class xcinfoCore {
     private let logger: Logger
@@ -23,9 +24,9 @@ public class xcinfoCore {
         logger = Logger(isVerbose: verbose, useANSI: useANSI)
     }
 
-    private func list(updateList: Bool) -> AnyPublisher<[XcodeRelease], Never> {
+    private func list(updateList: Bool) -> AnyPublisher<[Xcode], Never> {
         if updateList {
-            logger.verbose("Updating list of available Xcode releases from xcodereleases.com ...")
+            logger.verbose("Updating list of available Xcode releases from Xcodes.com ...")
             return api.remoteList()
                 .tryCatch { _ in self.api.cachedList() }
                 .replaceError(with: [])
@@ -37,74 +38,67 @@ public class xcinfoCore {
         }
     }
 
-    private func findXcodeReleases(for version: String?, knownVersions: [XcodeRelease]) -> [XcodeRelease] {
+    private func findXcodes(for version: String?, knownVersions: [Xcode]) -> [Xcode] {
         var releases = knownVersions
         if let version = version {
-            let pattern = #"(\d*.?\d*.?\d*) [b|B]eta ?(\d*)"#
-            let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            var betaVersion: Int?
-            var fullVersion: String?
-            if let match = regex?.firstMatch(in: version, options: [], range: NSRange(version.startIndex..., in: version)) {
-                if let versionRange = Range(match.range(at: 1), in: version) {
-                    fullVersion = String(version[versionRange])
-                }
-                if let betaRange = Range(match.range(at: 2), in: version), let beta = Int(version[betaRange]) {
-                    betaVersion = beta
-                }
-            }
+            let (fullVersion, betaVersion) = extractVersionParts(from: version)
             releases = releases.filter {
-                if let betaVersion = betaVersion {
-                    return ($0.version.number.lowercased().hasPrefix(fullVersion ?? version) &&
-                        $0.version.release.beta == betaVersion) ||
-                        $0.version.build.lowercased() == version
-                } else {
-                    return $0.version.number.lowercased().hasPrefix(fullVersion ?? version) ||
-                        $0.version.build.lowercased() == version
-                }
+                filter(xcode: $0, fullVersion: fullVersion, betaVersion: betaVersion, version: version)
             }
         }
-
         return releases
     }
 
-    private func findInstalledXcodes(for version: String?, knownVersions: [XcodeRelease]) -> [XcodeApplication] {
-        var xcodes = installedXcodes(knownVersions: knownVersions)
-
+    private func findInstalledXcodes(for version: String?, knownVersions: [Xcode]) -> [XcodeApplication] {
+        var xcodesApplications = installedXcodes(knownVersions: knownVersions)
         if let version = version {
-            let pattern = #"(\d*.?\d*.?\d*) [b|B]eta ?(\d*)"#
-            let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            var betaVersion: Int?
-            var fullVersion: String?
-            if let match = regex?.firstMatch(in: version, options: [], range: NSRange(version.startIndex..., in: version)) {
-                if let versionRange = Range(match.range(at: 1), in: version) {
-                    fullVersion = String(version[versionRange])
-                }
-                if let betaRange = Range(match.range(at: 2), in: version), let beta = Int(version[betaRange]) {
-                    betaVersion = beta
-                }
-            }
-            xcodes = xcodes.filter {
-                if let betaVersion = betaVersion {
-                    return ($0.release.version.number.lowercased().hasPrefix(fullVersion ?? version) &&
-                        $0.release.version.release.beta == betaVersion) ||
-                        $0.release.version.build.lowercased() == version
-                } else {
-                    return $0.release.version.number.lowercased().hasPrefix(fullVersion ?? version) ||
-                        $0.release.version.build.lowercased() == version
-                }
+            let (fullVersion, betaVersion) = extractVersionParts(from: version)
+            xcodesApplications = xcodesApplications.filter {
+                filter(xcode: $0.xcode, fullVersion: fullVersion, betaVersion: betaVersion, version: version)
             }
         }
-
-        return xcodes
+        return xcodesApplications
     }
 
-    func findXcodes(for version: String?, knownVersions: [XcodeRelease]) -> Future<[XcodeRelease], Never> {
+    private func extractVersionParts(from version: String) -> (String?, Int?) {
+        let pattern = #"(\d*.?\d*.?\d*) [b|B]eta ?(\d*)"#
+        let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive)
+        var betaVersion: Int?
+        var fullVersion: String?
+        if let match = regex?.firstMatch(in: version, options: [], range: NSRange(version.startIndex..., in: version)) {
+            if let versionRange = Range(match.range(at: 1), in: version) {
+                fullVersion = String(version[versionRange])
+            }
+            if let betaRange = Range(match.range(at: 2), in: version), let beta = Int(version[betaRange]) {
+                betaVersion = beta
+            }
+        }
+        return (fullVersion, betaVersion)
+    }
+
+    private func filter(xcode: Xcode, fullVersion: String?, betaVersion: Int?, version: String) -> Bool {
+        if let betaVersion = betaVersion {
+            let versionNumberHaveSamePrefix = xcode.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true
+            let betaVersionsAreSame: Bool = {
+                guard case let .beta(version) = xcode.version.release else { return false }
+                return version == betaVersion
+            }()
+            let areSameVersions = xcode.version.build.lowercased() == version
+
+            return versionNumberHaveSamePrefix && betaVersionsAreSame || areSameVersions
+        } else {
+            return xcode.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true ||
+                xcode.version.build.lowercased() == version
+        }
+    }
+
+    func findXcodes(for version: String?, knownVersions: [Xcode]) -> Future<[Xcode], Never> {
         Future { promise in
-            promise(.success(self.findXcodeReleases(for: version, knownVersions: knownVersions)))
+            promise(.success(self.findXcodes(for: version, knownVersions: knownVersions)))
         }
     }
 
-    func findXcodes(for version: String?, knownVersions: [XcodeRelease]) -> Future<[XcodeApplication], Never> {
+    func findXcodes(for version: String?, knownVersions: [Xcode]) -> Future<[XcodeApplication], Never> {
         Future { promise in
             promise(.success(self.findInstalledXcodes(for: version, knownVersions: knownVersions)))
         }
@@ -128,27 +122,27 @@ public class xcinfoCore {
                     if xcodes.count > 1 {
                         let listFormatter = ListFormatter()
                         listFormatter.locale = Locale(identifier: "en_US")
-                        self.logger.verbose("Found: \(listFormatter.string(from: xcodes.map { $0.release.description })!)")
+                        self.logger.verbose("Found: \(listFormatter.string(from: xcodes.map { $0.xcode.description })!)")
 
                         selected = choose("Please choose the version you want to uninstall: ", type: XcodeApplication.self) { settings in
-                            let longestXcodeNameLength = xcodes.map { $0.release.description }.max(by: { $1.count > $0.count })!.count
-                            for xcode in xcodes {
-                                let attributedName = xcode.release.attributedDisplayName
+                            let longestXcodeNameLength = xcodes.map { $0.xcode.description }.max(by: { $1.count > $0.count })!.count
+                            for xcodeApp in xcodes {
+                                let attributedName = xcodeApp.xcode.attributedDisplayName
                                 let width = longestXcodeNameLength + attributedName.count - attributedName.reset().count
-                                let choice = "\(attributedName.paddedWithSpaces(to: width)) – \(xcode.url.path.f.Cyan)"
+                                let choice = "\(attributedName.paddedWithSpaces(to: width)) – \(xcodeApp.url.path.f.Cyan)"
 
-                                settings.addChoice(choice) { xcode }
+                                settings.addChoice(choice) { xcodeApp }
                             }
                         }
                     } else {
                         selected = xcodes[0]
                     }
 
-                    if agree("Are you sure you want to uninstall Xcode \(selected.release.attributedDisplayName)?") {
+                    if agree("Are you sure you want to uninstall Xcode \(selected.xcode.attributedDisplayName)?") {
                         do {
-                            self.logger.verbose("Uninstalling Xcode \(selected.release.description) from \(selected.url.path) ...")
+                            self.logger.verbose("Uninstalling Xcode \(selected.xcode.description) from \(selected.url.path) ...")
                             try FileManager.default.removeItem(at: selected.url)
-                            self.logger.success("\(selected.release.description) uninstalled!")
+                            self.logger.success("\(selected.xcode.description) uninstalled!")
                             exit(EXIT_SUCCESS)
                         } catch {
                             self.logger.error("Uninstallation failed. Error: \(error.localizedDescription)")
@@ -176,7 +170,7 @@ public class xcinfoCore {
                     exit(EXIT_FAILURE)
                 }
 
-                let versions = showOnlyGMs ? result.filter { $0.version.release.gm } : result
+                let versions = showOnlyGMs ? result.filter { $0.version.isGM } : result
 
                 let columnWidth = versions.map { $0.description }.max(by: { $1.count > $0.count })!.count + 12
                 let installableVersions = versions.filter {
@@ -195,7 +189,7 @@ public class xcinfoCore {
 
                 self.printXcodeVersionList(xcodeVersions: listedVersions.map { $0.attributedDisplayName }, columnWidth: columnWidth)
 
-                let installedVersions = self.installedXcodes(knownVersions: versions).map { $0.release }
+                let installedVersions = self.installedXcodes(knownVersions: versions).map { $0.xcode }
 
                 if !installedVersions.isEmpty {
                     self.logger.log("\nAlready installed:")
@@ -241,7 +235,7 @@ public class xcinfoCore {
 
     public func info(releaseName: String?) {
         list(updateList: true)
-            .flatMap { knownVersions -> Future<[XcodeRelease], Never> in
+            .flatMap { knownVersions -> Future<[Xcode], Never> in
                 self.logger.beginSection("Identifying")
                 return self.findXcodes(for: releaseName, knownVersions: knownVersions)
             }
@@ -272,7 +266,7 @@ public class xcinfoCore {
 
                     self.logger.beginParagraph("SDKs")
 
-                    if let sdks = xcodeVersion.sdks {
+                    if let sdks = xcodeVersion.sdks?.keyed() {
                         let longestSDKName = sdks.map { "\($0.key) SDK:" }.max(by: { $1.count > $0.count })!.count
                         for (name, versions) in sdks {
                             let sdkName = "\(name) SDK:"
@@ -281,12 +275,12 @@ public class xcinfoCore {
                         }
                     }
                     self.logger.beginParagraph("Compilers")
-                    if let compilers = xcodeVersion.compilers {
-                        let longestName = compilers.map { "\($0.key) \($0.value[0].number ?? "")" }.max(by: { $1.count > $0.count })!.count
+                    if let compilers = xcodeVersion.compilers?.keyed() {
+                        let longestName = compilers.map { "\($0.key) \($0.value[0].number ?? ""):" }.max(by: { $1.count > $0.count })!.count
                         for (name, versions) in compilers {
                             let version = versions[0]
-                            let compilerName = "\(name) \(version.number ?? "")"
-                            self.logger.log("\(compilerName.paddedWithSpaces(to: longestName)): \(version.build)")
+                            let compilerName = "\(name) \(version.number ?? ""):"
+                            self.logger.log("\(compilerName.paddedWithSpaces(to: longestName)) \(version.build)")
                         }
                     }
 
@@ -303,7 +297,7 @@ public class xcinfoCore {
         RunLoop.main.run()
     }
 
-    private func chooseXcode(_ xcodes: [XcodeRelease], givenReleaseName: String?, prompt: String) -> XcodeRelease? {
+    private func chooseXcode(_ xcodes: [Xcode], givenReleaseName: String?, prompt: String) -> Xcode? {
         switch xcodes.count {
         case 0:
             return nil
@@ -313,13 +307,13 @@ public class xcinfoCore {
             return xcodes.first
         default:
             if let releaseName = givenReleaseName {
-                logger.log("Found multiple possiblities for the requested version '\(releaseName.f.Cyan)'.")
+                logger.log("Found multiple possibilities for the requested version '\(releaseName.f.Cyan)'.")
             } else {
                 logger.log("No version was provided. You can choose between the ten latest or cancel and use an argument.")
             }
 
             let listedXcodeVersions = givenReleaseName == nil ? Array(xcodes.prefix(10)) : xcodes
-            let selectedVersion = choose(prompt, type: XcodeRelease.self) { settings in
+            let selectedVersion = choose(prompt, type: Xcode.self) { settings in
                 for xcode in listedXcodeVersions {
                     settings.addChoice(self.logger.useANSI ? xcode.attributedDisplayName : xcode.displayName) { xcode }
                 }
@@ -333,11 +327,11 @@ public class xcinfoCore {
                         disableSleep: Bool,
                         skipSymlinkCreation: Bool,
                         skipXcodeSelection: Bool) {
-        var knownXcodes: [XcodeRelease] = []
-        var xcodeVersion: XcodeRelease?
+        var knownXcodes: [Xcode] = []
+        var xcodeVersion: Xcode?
 
         list(updateList: updateVersionList)
-            .flatMap { knownVersions -> Future<[XcodeRelease], Never> in
+            .flatMap { knownVersions -> Future<[Xcode], Never> in
                 knownXcodes = knownVersions
                 self.logger.beginSection("Identifying")
                 return self.findXcodes(for: releaseName, knownVersions: knownVersions)
@@ -424,7 +418,7 @@ public class xcinfoCore {
         return Int(result)
     }
 
-    private func createSymbolicLink(to destination: URL, knownXcodes: [XcodeRelease]) {
+    private func createSymbolicLink(to destination: URL, knownXcodes: [Xcode]) {
         let symlinkURL = URL(fileURLWithPath: "/Applications/Xcode.app")
         let fileManager = FileManager.default
 
@@ -435,9 +429,9 @@ public class xcinfoCore {
             logger.verbose("\(symlinkURL.path) already exists. Renaming it...")
 
             let installed = installedXcodes(knownVersions: knownXcodes)
-            if let xcode = installed.first(where: { $0.url == symlinkURL }) {
-                logger.verbose("\(symlinkURL.path) already exists. Moving it to /Applications/\(xcode.release.filename).", onSameLine: true)
-                let destination = URL(fileURLWithPath: "/Applications/\(xcode.release.filename)")
+            if let xcodeApp = installed.first(where: { $0.url == symlinkURL }) {
+                logger.verbose("\(symlinkURL.path) already exists. Moving it to /Applications/\(xcodeApp.xcode.filename).", onSameLine: true)
+                let destination = URL(fileURLWithPath: "/Applications/\(xcodeApp.xcode.filename)")
                 try? fileManager.moveItem(at: symlinkURL, to: destination)
             }
         }
@@ -548,9 +542,9 @@ public class xcinfoCore {
                 }
 
                 let xcodes = self.installedXcodes(knownVersions: knownVersions)
-                let longestXcodeNameLength = xcodes.map { $0.release.description }.max(by: { $1.count > $0.count })!.count
+                let longestXcodeNameLength = xcodes.map { $0.xcode.description }.max(by: { $1.count > $0.count })!.count
                 xcodes.forEach {
-                    let attributedName = $0.release.attributedDisplayName
+                    let attributedName = $0.xcode.attributedDisplayName
                     let width = longestXcodeNameLength + attributedName.count - attributedName.reset().count
                     self.logger.log("\(attributedName.paddedWithSpaces(to: width)) – \($0.url.path.f.Cyan)")
                 }
@@ -561,7 +555,7 @@ public class xcinfoCore {
         RunLoop.main.run()
     }
 
-    private func installedXcodes(knownVersions: [XcodeRelease]) -> [XcodeApplication] {
+    private func installedXcodes(knownVersions: [Xcode]) -> [XcodeApplication] {
         guard !knownVersions.isEmpty else {
             return []
         }
@@ -573,7 +567,7 @@ public class xcinfoCore {
             let versionURL = url.appendingPathComponent("Contents/version.plist")
             if let plistBuild = NSDictionary(contentsOfFile: versionURL.path)?["ProductBuildVersion"] as? String,
                 let release = knownVersions.first(where: { $0.version.build == plistBuild }) {
-                return XcodeApplication(url: url, release: release)
+                return XcodeApplication(url: url, xcode: release)
             } else {
                 return nil
             }

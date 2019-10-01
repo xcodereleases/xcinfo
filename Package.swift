@@ -20,6 +20,7 @@ let package = Package(
         .package(url: "https://github.com/getGuaka/Prompt.git", from: "0.0.0"),
         .package(url: "https://github.com/getGuaka/Colorizer.git", from: "0.0.0"),
         .package(url: "https://github.com/getGuaka/Run.git", from: "0.1.0"),
+        .package(url: "https://github.com/xcodereleases/data.git", .branch("master"))
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -46,7 +47,7 @@ let package = Package(
         ),
         .target(
             name: "xcinfoCore",
-            dependencies: ["OlympUs", "XCIFoundation", "XCUnxip"]
+            dependencies: ["OlympUs", "XCIFoundation", "XCUnxip", "XCModel"]
         ),
         .testTarget(
             name: "xcinfoCoreTests",
