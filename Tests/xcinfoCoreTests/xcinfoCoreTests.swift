@@ -3,10 +3,10 @@
 //  MIT license - see LICENSE.md
 //
 
+@testable import xcinfoCore
 import XCTest
-@testable import xcupdateCore
 
-final class xcupdateCoreTests: XCTestCase {
+final class xcinfoCoreTests: XCTestCase {
     func testVersionComparision() {
         let first = XcodeReleaseVersion(number: "8.0", build: "8A218a", release: XcodeReleaseInfo())
         let second = XcodeReleaseVersion(number: "11.0", build: "11M392q", release: XcodeReleaseInfo(gm: false, beta: 6))

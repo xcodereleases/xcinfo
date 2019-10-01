@@ -4,7 +4,7 @@
 //
 
 import Guaka
-import xcupdateCore
+import xcinfoCore
 
 var listCommand = Command(
     usage: "list",
@@ -39,6 +39,6 @@ private func execute(flags: Flags, args _: [String]) {
     let updateVersionList = flags.getBool(name: "no-list-update") == false
     let showOnlyGMs = flags.getBool(name: "only-gm") == true
 
-    let core = xcupdateCore(verbose: isVerbose, useANSI: useANSI)
+    let core = xcinfoCore(verbose: isVerbose, useANSI: useANSI)
     core.list(showAllVersions: showAllVersions, showOnlyGMs: showOnlyGMs, updateList: updateVersionList)
 }

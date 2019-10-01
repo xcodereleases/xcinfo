@@ -6,11 +6,11 @@
 import Foundation
 import Guaka
 import Prompt
-import XCUFoundation
+import XCIFoundation
 
 public enum Credentials {
     static func appleIDCredentials() -> (username: String, password: String) {
-        if let passwordItem = try? KeychainPasswordItem.passwordItems(forService: "xcupdate.appleid").first {
+        if let passwordItem = try? KeychainPasswordItem.passwordItems(forService: "xcinfo.appleid").first {
             let username = passwordItem.account
 
             do {
@@ -31,7 +31,7 @@ public enum Credentials {
 
             if shouldStoreInKeychain {
                 do {
-                    let item = KeychainPasswordItem(service: "xcupdate.appleid", account: username)
+                    let item = KeychainPasswordItem(service: "xcinfo.appleid", account: username)
                     try item.savePassword(password, overwriteExisting: true)
                 } catch {
                     fail(statusCode: 65, errorMessage: "Could not save password to the Keychain.")

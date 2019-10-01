@@ -6,7 +6,7 @@
 import Guaka
 
 var rootCommand = Command(
-    usage: "xcupdate",
+    usage: "xcinfo",
     configuration: configuration,
     run: execute
 )
@@ -15,7 +15,7 @@ private func configuration(command: Command) {
     command.add(flags: [
         Flag(longName: "version",
              value: false,
-             description: "Show the version number of xcupdate"),
+             description: "Show the version number of xcinfo"),
         Flag(longName: "no-ansi",
              value: false,
              description: "Show output without ANSI codes",
@@ -29,7 +29,7 @@ private func configuration(command: Command) {
 
     command.preRun = { flags, _ in
         if flags.getBool(name: "version") == true {
-            print(xcupdateVersion)
+            print(xcinfoVersion)
             return false
         }
         return true

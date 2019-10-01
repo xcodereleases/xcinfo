@@ -6,7 +6,7 @@
 import Colorizer
 import Combine
 import Foundation
-import XCUFoundation
+import XCIFoundation
 
 public struct XcodeReleaseLink: Codable {
     public var url: URL
@@ -255,7 +255,7 @@ class xcreleasesAPI {
         else {
             return nil
         }
-        let directory = cachesDirectory.appendingPathComponent("xcupdate")
+        let directory = cachesDirectory.appendingPathComponent("xcinfo")
         if !FileManager.default.fileExists(atPath: directory.path) {
             do {
                 try FileManager.default.createDirectory(
@@ -272,7 +272,7 @@ class xcreleasesAPI {
     }
 
     private var cacheFile: URL? {
-        cacheDirectory?.appendingPathComponent("xcupdate.json")
+        cacheDirectory?.appendingPathComponent("xcinfo.json")
     }
 
     public func cachedList() -> Future<[XcodeRelease], XCAPIError> {

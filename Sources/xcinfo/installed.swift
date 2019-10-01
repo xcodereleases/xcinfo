@@ -7,8 +7,8 @@ import Combine
 import Foundation
 import Guaka
 import Run
-import XCUFoundation
-import xcupdateCore
+import XCIFoundation
+import xcinfoCore
 
 var installedCommand = Command(
     usage: "installed",
@@ -31,6 +31,6 @@ private func execute(flags: Flags, args _: [String]) {
     let useANSI = flags.getBool(name: "no-ansi") == false
     let updateVersionList = flags.getBool(name: "no-list-update") == false
 
-    let core = xcupdateCore(verbose: isVerbose, useANSI: useANSI)
+    let core = xcinfoCore(verbose: isVerbose, useANSI: useANSI)
     core.installedXcodes(updateList: updateVersionList)
 }

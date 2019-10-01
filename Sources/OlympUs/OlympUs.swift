@@ -7,7 +7,7 @@ import Colorizer
 import Combine
 import Foundation
 import Prompt
-import XCUFoundation
+import XCIFoundation
 
 public enum OlympUsError: Error {
     case missingSessionKey
@@ -167,7 +167,7 @@ public class OlympUs {
 
     public func storedAuthenticationAssets(for account: String) -> AuthenticationAssets? {
         let item = KeychainPasswordItem(
-            service: "xcupdate.session",
+            service: "xcinfo.session",
             account: account
         )
         do {
@@ -181,7 +181,7 @@ public class OlympUs {
     @discardableResult
     private func storeAuthenticationAssets(assets: AuthenticationAssets, for account: String) -> Bool {
         let item = KeychainPasswordItem(
-            service: "xcupdate.session",
+            service: "xcinfo.session",
             account: account
         )
         do {

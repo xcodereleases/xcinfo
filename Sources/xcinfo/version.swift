@@ -5,4 +5,4 @@
 
 import Foundation
 
-let xcupdateVersion = "0.5.0"
+let xcinfoVersion = "0.5.0"

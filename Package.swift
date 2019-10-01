@@ -4,15 +4,15 @@
 import PackageDescription
 
 let package = Package(
-    name: "xcupdate",
+    name: "xcinfo",
     platforms: [
         .macOS(.v10_15),
     ],
     products: [
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
         .executable(
-            name: "xcupdate",
-            targets: ["xcupdate"]
+            name: "xcinfo",
+            targets: ["xcinfo"]
         ),
     ],
     dependencies: [
@@ -25,7 +25,7 @@ let package = Package(
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
-            name: "XCUFoundation",
+            name: "XCIFoundation",
             dependencies: ["Colorizer"]
         ),
         .target(
@@ -33,24 +33,24 @@ let package = Package(
             dependencies: []
         ),
         .testTarget(
-            name: "XCUFoundationTests",
-            dependencies: ["XCUFoundation"]
+            name: "XCIFoundationTests",
+            dependencies: ["XCIFoundation"]
         ),
         .target(
-            name: "xcupdate",
-            dependencies: ["xcupdateCore", "Guaka", "Prompt", "Colorizer", "Run", "XCUFoundation"],
+            name: "xcinfo",
+            dependencies: ["xcinfoCore", "Guaka", "Prompt", "Colorizer", "Run", "XCIFoundation"],
             linkerSettings: [
                 LinkerSetting.linkedFramework("PackageKit"),
                 LinkerSetting.unsafeFlags(["-F/System/Library/PrivateFrameworks/"]),
             ]
         ),
         .target(
-            name: "xcupdateCore",
-            dependencies: ["OlympUs", "XCUFoundation", "XCUnxip"]
+            name: "xcinfoCore",
+            dependencies: ["OlympUs", "XCIFoundation", "XCUnxip"]
         ),
         .testTarget(
-            name: "xcupdateCoreTests",
-            dependencies: ["xcupdateCore", "Prompt", "Run", "XCUnxip"],
+            name: "xcinfoCoreTests",
+            dependencies: ["xcinfoCore", "Prompt", "Run", "XCUnxip", "Guaka"],
             linkerSettings: [
                 LinkerSetting.linkedFramework("PackageKit"),
                 LinkerSetting.unsafeFlags(["-F/System/Library/PrivateFrameworks/"]),
@@ -58,7 +58,7 @@ let package = Package(
         ),
         .target(
             name: "OlympUs",
-            dependencies: ["XCUFoundation"]
+            dependencies: ["XCIFoundation"]
         ),
     ]
 )

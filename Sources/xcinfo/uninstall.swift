@@ -4,7 +4,7 @@
 //
 
 import Guaka
-import xcupdateCore
+import xcinfoCore
 
 var uninstallCommand = Command(
     usage: "uninstall [version]",
@@ -15,7 +15,7 @@ var uninstallCommand = Command(
 private func configuration(command: Command) {
     command.shortMessage = "Uninstall an Xcode version"
     command.longMessage = "Uninstall a specific version of Xcode."
-    command.example = #"xcupdate uninstall\#nxcupdate uninstall 11\#nxcupdate uninstall "11 Beta 5""#
+    command.example = #"xcinfo uninstall\#nxcinfo uninstall 11\#nxcinfo uninstall "11 Beta 5""#
     command.aliases = ["remove"]
 }
 
@@ -27,6 +27,6 @@ private func execute(flags: Flags, args: [String]) {
         return print("A VERSION argument is required.".f.Red)
     }
 
-    let core = xcupdateCore(verbose: isVerbose, useANSI: useANSI)
+    let core = xcinfoCore(verbose: isVerbose, useANSI: useANSI)
     core.uninstall(args.first?.lowercased())
 }

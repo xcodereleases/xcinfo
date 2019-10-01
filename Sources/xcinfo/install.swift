@@ -4,7 +4,7 @@
 //
 
 import Guaka
-import xcupdateCore
+import xcinfoCore
 
 var installCommand = Command(
     usage: "install version",
@@ -15,7 +15,7 @@ var installCommand = Command(
 private func configuration(command: Command) {
     command.shortMessage = "Install an Xcode version"
     command.longMessage = "Install a specific version of Xcode."
-    command.example = #"xcupdate install 11\#nxcupdate install "11 Beta 5"\#nxcupdate install 11M382q"#
+    command.example = #"xcinfo install 11\#nxcinfo install "11 Beta 5"\#nxcinfo install 11M382q"#
     command.add(flags: [
         Flag(longName: "no-sleep",
              value: true,
@@ -54,7 +54,7 @@ private func execute(flags: Flags, args: [String]) {
     }
 
     let releaseName = args.first
-    let core = xcupdateCore(verbose: isVerbose, useANSI: useANSI)
+    let core = xcinfoCore(verbose: isVerbose, useANSI: useANSI)
     core.install(releaseName: releaseName,
                  updateVersionList: updateVersionList,
                  disableSleep: disableSleep,

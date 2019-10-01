@@ -4,10 +4,10 @@
 //
 
 import Colorizer
+@testable import XCIFoundation
 import XCTest
-@testable import XCUFoundation
 
-final class XCUFoundationTests: XCTestCase {
+final class XCIFoundationTests: XCTestCase {
     func testResetString() {
         let str = "Hello World".f.Green
         XCTAssertEqual(str.reset(), "Hello World")

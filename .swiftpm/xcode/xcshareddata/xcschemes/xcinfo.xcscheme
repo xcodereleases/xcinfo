@@ -14,9 +14,37 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "xcupdate"
-               BuildableName = "xcupdate"
-               BlueprintName = "xcupdate"
+               BlueprintIdentifier = "xcinfo"
+               BuildableName = "xcinfo"
+               BlueprintName = "xcinfo"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "XCIFoundationTests"
+               BuildableName = "XCIFoundationTests"
+               BlueprintName = "XCIFoundationTests"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "xcinfoCoreTests"
+               BuildableName = "xcinfoCoreTests"
+               BlueprintName = "xcinfoCoreTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -28,9 +56,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "XCUFoundation"
-               BuildableName = "XCUFoundation"
-               BlueprintName = "XCUFoundation"
+               BlueprintIdentifier = "XCIFoundation"
+               BuildableName = "XCIFoundation"
+               BlueprintName = "XCIFoundation"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -42,9 +70,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "xcupdateCore"
-               BuildableName = "xcupdateCore"
-               BlueprintName = "xcupdateCore"
+               BlueprintIdentifier = "xcinfoCore"
+               BuildableName = "xcinfoCore"
+               BlueprintName = "xcinfoCore"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -62,6 +90,20 @@
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "XCUnxip"
+               BuildableName = "XCUnxip"
+               BlueprintName = "XCUnxip"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -74,9 +116,9 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "XCUFoundationTests"
-               BuildableName = "XCUFoundationTests"
-               BlueprintName = "XCUFoundationTests"
+               BlueprintIdentifier = "XCIFoundationTests"
+               BuildableName = "XCIFoundationTests"
+               BlueprintName = "XCIFoundationTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>
@@ -84,9 +126,9 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "xcupdateCoreTests"
-               BuildableName = "xcupdateCoreTests"
-               BlueprintName = "xcupdateCoreTests"
+               BlueprintIdentifier = "xcinfoCoreTests"
+               BuildableName = "xcinfoCoreTests"
+               BlueprintName = "xcinfoCoreTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>
@@ -106,52 +148,20 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "xcupdate"
-            BuildableName = "xcupdate"
-            BlueprintName = "xcupdate"
+            BlueprintIdentifier = "xcinfo"
+            BuildableName = "xcinfo"
+            BlueprintName = "xcinfo"
             ReferencedContainer = "container:">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "install 11"
+            argument = "info 11.1"
             isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "installed"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "cleanup"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "list"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "uninstall 8"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "--verbose"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "--help"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "--no-list-update"
-            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--no-ansi"
             isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "--all"
-            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
    </LaunchAction>
@@ -165,9 +175,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "xcupdate"
-            BuildableName = "xcupdate"
-            BlueprintName = "xcupdate"
+            BlueprintIdentifier = "xcinfo"
+            BuildableName = "xcinfo"
+            BlueprintName = "xcinfo"
             ReferencedContainer = "container:">
          </BuildableReference>
       </BuildableProductRunnable>

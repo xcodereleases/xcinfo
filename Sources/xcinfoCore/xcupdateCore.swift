@@ -10,9 +10,9 @@ import Foundation
 import OlympUs
 import Prompt
 import Run
-import XCUFoundation
+import XCIFoundation
 
-public class xcupdateCore {
+public class xcinfoCore {
     private let logger: Logger
     private var disposeBag = Set<AnyCancellable>()
 
@@ -487,7 +487,7 @@ public class xcupdateCore {
         logger.beginSection("Cleanup")
         logger.log("")
         do {
-            let items = try KeychainPasswordItem.passwordItems(forService: "xcupdate.appleid")
+            let items = try KeychainPasswordItem.passwordItems(forService: "xcinfo.appleid")
             if !items.isEmpty {
                 for item in items {
                     try item.deleteItem()
@@ -497,10 +497,10 @@ public class xcupdateCore {
                 logger.log("No Apple ID credentials were stored.")
             }
         } catch {
-            logger.error("Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcupdate.appleid'.")
+            logger.error("Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcinfo.appleid'.")
         }
         do {
-            let items = try KeychainPasswordItem.passwordItems(forService: "xcupdate.session")
+            let items = try KeychainPasswordItem.passwordItems(forService: "xcinfo.session")
             if !items.isEmpty {
                 for item in items {
                     try item.deleteItem()
@@ -510,7 +510,7 @@ public class xcupdateCore {
                 logger.log("No Apple developer portal session info was stored.")
             }
         } catch {
-            logger.error("Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcupdate.session'.")
+            logger.error("Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcinfo.session'.")
         }
         let olymp = OlympUs(logger: logger)
         olymp.cleanupCookies()

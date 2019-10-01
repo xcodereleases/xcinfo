@@ -4,7 +4,7 @@
 //
 
 import Guaka
-import xcupdateCore
+import xcinfoCore
 
 var cleanupCommand = Command(
     usage: "cleanup",
@@ -21,6 +21,6 @@ private func execute(flags: Flags, args _: [String]) {
     let isVerbose = flags.getBool(name: "verbose") == true
     let useANSI = flags.getBool(name: "no-ansi") == false
 
-    let core = xcupdateCore(verbose: isVerbose, useANSI: useANSI)
+    let core = xcinfoCore(verbose: isVerbose, useANSI: useANSI)
     core.cleanup()
 }

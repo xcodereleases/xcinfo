@@ -8,7 +8,7 @@ import Foundation
 import IOKit
 import IOKit.pwr_mgt
 import OlympUs
-import XCUFoundation
+import XCIFoundation
 
 class FileDownload: NSObject, URLSessionDownloadDelegate {
     enum State {

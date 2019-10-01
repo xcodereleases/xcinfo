@@ -5,7 +5,7 @@
 
 import Combine
 import Foundation
-import XCUFoundation
+import XCIFoundation
 import XCUnxip
 
 class Extractor {

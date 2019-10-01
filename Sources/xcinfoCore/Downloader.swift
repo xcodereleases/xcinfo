@@ -6,7 +6,7 @@
 import Combine
 import Foundation
 import OlympUs
-import XCUFoundation
+import XCIFoundation
 
 enum DownloadError: Error {
     case authenticationError
