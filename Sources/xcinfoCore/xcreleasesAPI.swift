@@ -7,86 +7,20 @@ import Colorizer
 import Combine
 import Foundation
 import XCIFoundation
+import XCModel
 
-public struct XcodeReleaseLink: Codable {
+struct XcodeApplication {
     public var url: URL
-}
-
-public struct XcodeReleaseLinkCollection: Codable {
-    public var notes: XcodeReleaseLink?
-    public var download: XcodeReleaseLink?
-}
-
-public struct XcodeReleaseVersion: Codable {
-    public var number: String
-    public var build: String
-    public var release: XcodeReleaseInfo
-}
-
-public struct SDKReleaseVersion: Codable {
-    public var number: String?
-    public var build: String
-    public var release: XcodeReleaseInfo
-}
-
-public struct CompilerReleaseVersion: Codable {
-    public var number: String?
-    public var build: String
-    public var release: XcodeReleaseInfo
-}
-
-public struct XcodeReleaseInfo {
-    public var gm: Bool = true
-    public var gmSeed: Int?
-    public var beta: Int?
-    public var dp: Int?
-}
-
-extension XcodeReleaseInfo: Codable {
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        gm = try container.decodeIfPresent(Bool.self, forKey: .gm) ?? false
-        gmSeed = try container.decodeIfPresent(Int.self, forKey: .gmSeed)
-        beta = try container.decodeIfPresent(Int.self, forKey: .beta)
-        dp = try container.decodeIfPresent(Int.self, forKey: .dp)
-    }
-}
-
-public enum Platform: String, Codable {
-    case macOS
-    case iOS
-    case tvOS
-    case watchOS
-}
-
-public struct XcodeRelease: Codable {
-    public var links: XcodeReleaseLinkCollection?
-    public var name: String
-    public var version: XcodeReleaseVersion
-    public var requires: String
-    public var date: XcodeReleaseDate
-    public var sdks: [String: [SDKReleaseVersion]]?
-    public var compilers: [String: [CompilerReleaseVersion]]?
-}
-
-public struct XcodeReleaseDate: Codable {
-    public var year: Int
-    public var month: Int
-    public var day: Int
-}
-
-public struct XcodeApplication {
-    public var url: URL
-    public var release: XcodeRelease
+    public var xcode: Xcode
 }
 
 extension XcodeApplication: Comparable {
     public static func < (lhs: XcodeApplication, rhs: XcodeApplication) -> Bool {
-        lhs.release < rhs.release
+        lhs.xcode < rhs.xcode
     }
 }
 
-extension XcodeRelease {
+extension Xcode {
     public var releaseDate: Date {
         Calendar.current.date(from: DateComponents(year: date.year,
                                                    month: date.month,
@@ -94,13 +28,18 @@ extension XcodeRelease {
     }
 }
 
-extension XcodeRelease: CustomStringConvertible, CustomDebugStringConvertible {
+extension Xcode: CustomStringConvertible, CustomDebugStringConvertible {
     var displayVersion: String {
-        var components: [String] = [version.number]
-        if let gmSeed = version.release.gmSeed {
-            components.append("GM Seed \(gmSeed)")
-        } else if let betaVersion = version.release.beta {
-            components.append("Beta \(betaVersion)")
+        var components: [String] = []
+        if let number = version.number {
+            components.append(number)
+        }
+        if case let .gmSeed(version) = version.release {
+            components.append("GM Seed \(version)")
+        } else if case let .beta(version) = version.release {
+            components.append("Beta \(version)")
+        } else if case let .dp(version) = version.release {
+            components.append("DP \(version)")
         }
         return components.joined(separator: " ")
     }
@@ -121,41 +60,40 @@ extension XcodeRelease: CustomStringConvertible, CustomDebugStringConvertible {
     public var description: String { displayName }
     public var debugDescription: String { displayName }
 
-    var attributedDisplayVersion: String {
-        var components: [String] = [version.number]
-        if let gmSeed = version.release.gmSeed {
-            components.append("GM Seed \(gmSeed)")
-        } else if let betaVersion = version.release.beta {
-            components.append("Beta \(betaVersion)")
-        }
-        return components.joined(separator: " ").f.Cyan
-    }
+    var attributedDisplayVersion: String { displayVersion.f.Cyan }
 
     public var attributedDisplayName: String { "\(attributedDisplayVersion) (\(version.build))" }
 }
 
-extension XcodeRelease {
+extension Xcode {
+    var isBeta: Bool { version.isBeta }
+}
+
+extension Version {
+    var isGM: Bool { release.isGM }
+
+    var isGMSeed: Bool {
+        guard case .gmSeed = release else { return false }
+        return true
+    }
+
     var isBeta: Bool {
-        version.isBeta
+        guard case .beta = release else { return false }
+        return true
+    }
+
+    var isDP: Bool {
+        guard case .dp = release else { return false }
+        return true
     }
 }
 
-extension XcodeReleaseVersion {
-    var isGM: Bool {
-        release.gm || release.gmSeed != nil
-    }
-
-    var isBeta: Bool {
-        !isGM && (release.beta != nil || release.dp != nil)
-    }
-}
-
-extension XcodeRelease: Comparable, Hashable {
-    public static func == (lhs: XcodeRelease, rhs: XcodeRelease) -> Bool {
+extension Xcode: Comparable, Hashable {
+    public static func == (lhs: Xcode, rhs: Xcode) -> Bool {
         lhs.version == rhs.version
     }
 
-    public static func < (lhs: XcodeRelease, rhs: XcodeRelease) -> Bool {
+    public static func < (lhs: Xcode, rhs: Xcode) -> Bool {
         lhs.version < rhs.version
     }
 
@@ -164,9 +102,12 @@ extension XcodeRelease: Comparable, Hashable {
     }
 }
 
-extension XcodeReleaseVersion: Comparable, Hashable {
-    public static func < (lhs: XcodeReleaseVersion, rhs: XcodeReleaseVersion) -> Bool {
-        let numberComparision = lhs.number.compare(rhs.number, options: .numeric)
+extension Version: Comparable, Hashable {
+    public static func < (lhs: Version, rhs: Version) -> Bool {
+        let numberComparision: ComparisonResult = {
+            guard let lhsNumber = lhs.number, let rhsNumber = rhs.number else { return .orderedSame }
+            return lhsNumber.compare(rhsNumber, options: .numeric)
+        }()
 
         if lhs.isGM, rhs.isGM {
             if numberComparision == .orderedSame {
@@ -175,18 +116,21 @@ extension XcodeReleaseVersion: Comparable, Hashable {
                 return numberComparision == .orderedAscending
             }
         } else if numberComparision == .orderedSame {
-            if let lhsBeta = lhs.release.beta, let rhsBeta = rhs.release.beta {
-                return lhsBeta < rhsBeta
-            } else if lhs.isGM, rhs.isBeta {
+            switch (lhs.release, rhs.release) {
+            case let (.gmSeed(lhsVersion), .gmSeed(rhsVersion)):
+                return lhsVersion < rhsVersion
+            case let (.beta(lhsVersion), .beta(rhsVersion)):
+                return lhsVersion < rhsVersion
+            case let (.dp(lhsVersion), .dp(rhsVersion)):
+                return lhsVersion < rhsVersion
+            default:
                 return false
-            } else {
-                return true
             }
         }
         return numberComparision == .orderedAscending
     }
 
-    public static func == (lhs: XcodeReleaseVersion, rhs: XcodeReleaseVersion) -> Bool {
+    public static func == (lhs: Version, rhs: Version) -> Bool {
         lhs.number == rhs.number
     }
 
@@ -194,6 +138,21 @@ extension XcodeReleaseVersion: Comparable, Hashable {
         hasher.combine(number)
     }
 }
+
+protocol KeyedVersions {}
+extension KeyedVersions {
+    func keyed() -> [String: [Version]] {
+        let mirror = Mirror(reflecting: self)
+        var dict: [String: [Version]] = [:]
+        for child in mirror.children {
+            guard let key = child.label, let versions = child.value as? [Version] else { continue }
+            dict[key] = versions
+        }
+        return dict
+    }
+}
+extension SDKs: KeyedVersions {}
+extension Compilers: KeyedVersions {}
 
 enum XCAPIError: Error {
     case invalidResponse
@@ -217,16 +176,16 @@ class xcreleasesAPI {
         self.logger = logger
     }
 
-    public func remoteList() -> Future<[XcodeRelease], XCAPIError> {
+    public func remoteList() -> Future<[Xcode], XCAPIError> {
         Future { promise in
             let request = URLRequest(url: self.baseURL)
             URLSession.shared.dataTaskPublisher(for: request)
                 .map { $0.data }
-                .decode(type: [XcodeRelease].self, decoder: JSONDecoder())
+                .decode(type: [Xcode].self, decoder: JSONDecoder())
                 .handleEvents(receiveOutput: { values in
                     self.cacheListResponse(content: values)
                 })
-                .sink(receiveCompletion: { _ in
+                .sink(receiveCompletion: { foo in
                     promise(.failure(.invalidResponse))
                 }, receiveValue: { values in
                     promise(.success(values))
@@ -236,7 +195,7 @@ class xcreleasesAPI {
     }
 
     @discardableResult
-    private func cacheListResponse(content: [XcodeRelease]) -> Bool {
+    private func cacheListResponse(content: [Xcode]) -> Bool {
         guard let cacheFile = cacheFile else {
             return false
         }
@@ -275,7 +234,7 @@ class xcreleasesAPI {
         cacheDirectory?.appendingPathComponent("xcinfo.json")
     }
 
-    public func cachedList() -> Future<[XcodeRelease], XCAPIError> {
+    public func cachedList() -> Future<[Xcode], XCAPIError> {
         Future { promise in
             guard let cacheFile = self.cacheFile else {
                 promise(.failure(.invalidCache))
@@ -283,7 +242,7 @@ class xcreleasesAPI {
             }
             do {
                 let data = try Data(contentsOf: cacheFile)
-                let result = try JSONDecoder().decode([XcodeRelease].self, from: data)
+                let result = try JSONDecoder().decode([Xcode].self, from: data)
                 promise(.success(result))
             } catch {
                 promise(.failure(.invalidCache))

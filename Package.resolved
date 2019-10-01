@@ -20,6 +20,15 @@
         }
       },
       {
+        "package": "XcodeReleases",
+        "repositoryURL": "https://github.com/xcodereleases/data.git",
+        "state": {
+          "branch": "master",
+          "revision": "637e44daf0dafc829474a564728bdd287f865305",
+          "version": null
+        }
+      },
+      {
         "package": "Guaka",
         "repositoryURL": "https://github.com/nsomar/Guaka.git",
         "state": {

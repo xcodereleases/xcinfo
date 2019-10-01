@@ -5,20 +5,21 @@
 
 @testable import xcinfoCore
 import XCTest
+import XCModel
 
 final class xcinfoCoreTests: XCTestCase {
     func testVersionComparision() {
-        let first = XcodeReleaseVersion(number: "8.0", build: "8A218a", release: XcodeReleaseInfo())
-        let second = XcodeReleaseVersion(number: "11.0", build: "11M392q", release: XcodeReleaseInfo(gm: false, beta: 6))
-        let third = XcodeReleaseVersion(number: "11.0", build: "11M374r", release: XcodeReleaseInfo(gm: false, beta: 4))
+        let first = Version("8A218a", "8.0")
+        let second = Version("11M392q", "11.0", .beta(6))
+        let third = Version("11M374r", "11.0", .beta(4))
 
         let sorted = [second, third, first].sorted { $0 > $1 }
         XCTAssertEqual(sorted, [third, second, first])
     }
 
     func testTwoGMs() {
-        let first = XcodeReleaseVersion(number: "10.0", build: "10A255", release: XcodeReleaseInfo())
-        let second = XcodeReleaseVersion(number: "10.1", build: "10B61", release: XcodeReleaseInfo())
+        let first = Version("10A255", "10.0")
+        let second = Version("10B61", "10.1")
 
         let sorted = [first, second].sorted { $0 > $1 }
         XCTAssertEqual(sorted, [second, first])
