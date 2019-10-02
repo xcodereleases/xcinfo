@@ -32,9 +32,9 @@
         "package": "Guaka",
         "repositoryURL": "https://github.com/trispo/Guaka.git",
         "state": {
-          "branch": null,
-          "revision": "6fb29b2378166a30d72120980e1c099c664598de",
-          "version": "0.4.1"
+          "branch": "master",
+          "revision": "35bfea0338248630a9d25a478d3362e5fa085a87",
+          "version": null
         }
       },
       {

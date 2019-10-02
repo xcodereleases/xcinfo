@@ -16,7 +16,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/trispo/Guaka.git", from: "0.0.0"),
+        .package(url: "https://github.com/trispo/Guaka.git", .branch("master")),
         .package(url: "https://github.com/getGuaka/Prompt.git", from: "0.0.0"),
         .package(url: "https://github.com/getGuaka/Colorizer.git", from: "0.0.0"),
         .package(url: "https://github.com/getGuaka/Run.git", from: "0.1.0"),
