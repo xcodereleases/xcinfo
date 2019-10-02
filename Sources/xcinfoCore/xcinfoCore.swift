@@ -338,7 +338,13 @@ public class xcinfoCore {
             }
             .mapError { _ in XCAPIError.downloadInterrupted }
             .flatMap { xcodes -> AnyPublisher<URL, XCAPIError> in
-                xcodeVersion = self.chooseXcode(xcodes, givenReleaseName: releaseName, prompt: "Please choose the version you want to install: ")
+                var selectableXcodes = xcodes
+                var releaseName = releaseName
+                if xcodes.isEmpty {
+                    selectableXcodes = knownXcodes
+                    releaseName = nil 
+                }
+                xcodeVersion = self.chooseXcode(selectableXcodes, givenReleaseName: releaseName, prompt: "Please choose the version you want to install: ")
                 if let xcodeVersion = xcodeVersion, let url = xcodeVersion.links?.download?.url {
                     self.logger.log("Starting installation.")
                     return Just(url)
