@@ -1,6 +1,5 @@
 # xcinfo
 
-
 - provides access to data of xcodereleases.com via api
 - downloads and installs specific Xcode versions
 - finds and lists installed Xcode version on hard drive
@@ -10,13 +9,16 @@
 
 ### Manually
 - checkout
-- run `swift build`
-- run `cp .build/debug/xcinfo /usr/local/bin`
+- run `swift build -c release`
+- run `cp .build/release/xcinfo /usr/local/bin`
 
 ### homebrew
 - tbd
 
-## Subcommands
+## Usage
+
+### info (default)
+- show detailed information about a version of Xcode
 
 ### list
 - list all available Xcode versions ever released by Apple
@@ -33,15 +35,14 @@
 ### cleanup
 - if something goes wrong this removes all entries stored in the keychain, all cookies, and user defaults  
 
-## CLI Integration
-
+## CI
 - no-ansi flag to suppress colored output
 - verbose flag
 
 ## Screenshots
 
 ## TODO
-
+- `latest` argument for install subcommand (e.g. `xcinfo install latest`)
 - man page
 - tests
 - include default data (when github is offline)
