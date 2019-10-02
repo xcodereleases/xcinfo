@@ -169,19 +169,27 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "list"
-            isEnabled = "YES">
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "--verbose"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "11"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "info 11.1"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "--verbose"
+            argument = "-h"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--no-ansi"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
    </LaunchAction>

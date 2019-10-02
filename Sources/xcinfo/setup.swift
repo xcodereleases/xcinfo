@@ -10,12 +10,12 @@ import Prompt
 func setupCommands() {
     setupHelp()
 
+    rootCommand.add(subCommand: infoCommand)
     rootCommand.add(subCommand: listCommand)
     rootCommand.add(subCommand: installCommand)
     rootCommand.add(subCommand: cleanupCommand)
     rootCommand.add(subCommand: installedCommand)
     rootCommand.add(subCommand: uninstallCommand)
-    rootCommand.add(subCommand: infoCommand)
     // Command adding placeholder, edit this line
 }
 

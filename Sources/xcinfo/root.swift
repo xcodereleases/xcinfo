@@ -27,6 +27,8 @@ private func configuration(command: Command) {
              inheritable: true),
     ])
 
+    command.defaultSubcommand = infoCommand
+
     command.preRun = { flags, _ in
         if flags.getBool(name: "version") == true {
             print(xcinfoVersion)
@@ -37,6 +39,6 @@ private func configuration(command: Command) {
 }
 
 private func execute(flags _: Flags, args _: [String]) {
-    print("No command specified. Will use `install`.")
-    installCommand.execute()
+    print("No command specified. Will use `info`.")
+    infoCommand.execute()
 }
