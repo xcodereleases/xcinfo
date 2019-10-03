@@ -17,18 +17,31 @@ public class xcinfoCore {
     private let logger: Logger
     private var disposeBag = Set<AnyCancellable>()
 
-    private lazy var api = xcreleasesAPI(baseURL: URL(string: "https://xcodereleases.com/data.json")!, logger: logger)
-    private lazy var downloader = Downloader(logger: logger)
+    private let session: URLSession
+    private let sessionDelegateProxy = URLSessionDelegateProxy()
+
+    private lazy var api = xcreleasesAPI(baseURL: URL(string: "https://xcodereleases.com/data.json")!, logger: logger, session: session)
+
+    private lazy var olymp = OlympUs(logger: logger, session: session)
+    private lazy var downloader = Downloader(logger: logger, olymp: olymp, sessionDelegateProxy: sessionDelegateProxy)
 
     public init(verbose: Bool, useANSI: Bool) {
         logger = Logger(isVerbose: verbose, useANSI: useANSI)
+        let config = URLSessionConfiguration.default
+        config.httpCookieAcceptPolicy = .always
+        config.httpCookieStorage = .shared
+        config.timeoutIntervalForRequest = 5
+        session = URLSession(configuration: config, delegate: sessionDelegateProxy, delegateQueue: nil)
     }
 
     private func list(updateList: Bool) -> AnyPublisher<[Xcode], Never> {
         if updateList {
             logger.verbose("Updating list of available Xcode releases from Xcodes.com ...")
             return api.remoteList()
-                .tryCatch { _ in self.api.cachedList() }
+                .tryCatch { error -> Future<[Xcode], XCAPIError> in
+                    self.logger.verbose("Could not update the list: \(error).")
+                    return self.api.cachedList()
+                }
                 .replaceError(with: [])
                 .eraseToAnyPublisher()
         } else {
@@ -242,7 +255,7 @@ public class xcinfoCore {
             .mapError { _ in XCAPIError.downloadInterrupted }
             .sink(receiveCompletion: { completion in
                 if case let .failure(error) = completion {
-                    self.logger.error("\(error.localizedDescription)")
+                    self.logger.error(error.description)
                     exit(EXIT_FAILURE)
                 }
             }, receiveValue: { xcodeVersions in
@@ -381,46 +394,97 @@ public class xcinfoCore {
             }
             .sink(receiveCompletion: { completion in
                 if case let .failure(error) = completion {
-                    self.logger.error("\(error.localizedDescription)")
+                    self.logger.error("\(error)")
                     exit(EXIT_FAILURE)
                 }
             }, receiveValue: { url in
-                let xcodeVerification = self.verifyXcode(at: url)
-                guard xcodeVerification == EXIT_SUCCESS else {
-                    self.logger.error("Xcode verification failed.")
-                    try? FileManager.default.removeItem(at: url)
-                    exit(Int32(xcodeVerification))
-                }
-
-                self.logger.log("Installing Xcode ...")
-                let password = Credentials.ask(prompt: "Password:", secure: true)
-
-                self.enableDeveloperMode(password: password)
-                self.approveLicense(password: password, url: url)
-                self.installComponents(password: password, url: url)
-
-                if !skipSymlinkCreation {
-                    self.createSymbolicLink(to: url, knownXcodes: knownXcodes)
-                }
-
-                if !skipXcodeSelection {
-                    self.selectXcode(at: url, password: password)
-                }
-
-                self.logger.log("Installed Xcode to \(url.path)")
-                NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: "/Applications")
-
-                exit(EXIT_SUCCESS)
+                self.installXcode(from: url,
+                                  knownXcodes: knownXcodes,
+                                  skipSymlinkCreation: skipSymlinkCreation,
+                                  skipXcodeSelection: skipXcodeSelection)
             })
             .store(in: &disposeBag)
 
         RunLoop.main.run()
     }
 
+    public func installXcode(from url: URL, skipSymlinkCreation: Bool, skipXcodeSelection: Bool) {
+        list(updateList: true)
+            .sink { xcodes in
+                self.installXcode(from: url,
+                                  knownXcodes: xcodes,
+                                  skipSymlinkCreation: skipSymlinkCreation,
+                                  skipXcodeSelection: skipXcodeSelection)
+        }
+        .store(in: &disposeBag)
+
+        RunLoop.main.run()
+    }
+
+    private func installXcode(from url: URL, knownXcodes: [Xcode], skipSymlinkCreation: Bool, skipXcodeSelection: Bool) {
+        self.logger.beginSection("Installing")
+
+        let xcodeVerification = self.verifyXcode(at: url)
+        guard xcodeVerification == EXIT_SUCCESS else {
+            self.logger.error("Xcode verification failed.")
+            try? FileManager.default.removeItem(at: url)
+            exit(Int32(xcodeVerification))
+        }
+
+        var passwordAttempts = 0
+        let maxPasswordAttempts = 3
+        var possiblePassword: String?
+        repeat {
+            passwordAttempts += 1
+            let prompt: String = {
+                if passwordAttempts == 1 {
+                    return "Please enter your password:"
+                } else {
+                    return "Sorry, try again.\nPassword:"
+                }
+            }()
+            possiblePassword = getPassword(prompt: prompt)
+        } while possiblePassword == nil && passwordAttempts < maxPasswordAttempts
+
+        guard let password = possiblePassword else {
+            logger.error("Sorry, 3 incorrect password attempts")
+            exit(EXIT_FAILURE)
+        }
+
+        enableDeveloperMode(password: password)
+        approveLicense(password: password, url: url)
+        installComponents(password: password, url: url)
+
+        if !skipSymlinkCreation {
+            createSymbolicLink(to: url, knownXcodes: knownXcodes)
+        }
+
+        if !skipXcodeSelection {
+            selectXcode(at: url, password: password)
+        }
+
+        logger.log("Installed Xcode to \(url.path)")
+        NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: "/Applications")
+
+        exit(EXIT_SUCCESS)
+    }
+
+    private func getPassword(prompt: String) -> String? {
+        do {
+            let password = try Credentials.ask(prompt: prompt, secure: true) { pwd in
+                let sudoExitStatus = self.runSudo(command: "ls", password: pwd, args: [])
+                return sudoExitStatus == EXIT_SUCCESS
+            }
+            return password
+        } catch {
+            return nil
+        }
+    }
+
     @discardableResult public func selectXcode(at url: URL, password: String) -> Int {
-        logger.verbose("Selecting Xcode...")
+        logger.log("Selecting Xcode...")
         let result = runSudo(command: "xcode-select", password: password, args: ["-s", url.path])
-        logger.verbose("Selecting Xcode \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
+        logger.log("Selecting Xcode \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return Int(result)
     }
 
@@ -447,39 +511,39 @@ public class xcinfoCore {
     }
 
     @discardableResult private func verifyXcode(at url: URL) -> Int {
-        logger.verbose("Verifying Xcode...")
+        logger.log("Verifying Xcode...")
         let exitStatus = run("/usr/bin/codesign", args: ["--verify", "--verbose", url.path]).exitStatus
-        logger.verbose("Verifying Xcode \(exitStatus == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
+        logger.log("Verifying Xcode \(exitStatus == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return exitStatus
     }
 
     @discardableResult public func enableDeveloperMode(password: String) -> Int {
-        logger.verbose("Enabling Developer Mode...")
+        logger.log("Enabling Developer Mode...")
 
         let result1 = runSudo(command: "/usr/sbin/DevToolsSecurity", password: password, args: ["-enable"])
 
         guard result1 == EXIT_SUCCESS else {
-            logger.verbose("Enabling Developer Mode ✗")
+            logger.log("Enabling Developer Mode ✗")
             return Int(result1)
         }
 
         let result2 = runSudo(command: "/usr/sbin/dseditgroup", password: password, args: "-o edit -t group -a staff _developer".components(separatedBy: " "))
 
-        logger.verbose("Enabling Developer Mode \(result2 == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
+        logger.log("Enabling Developer Mode \(result2 == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return Int(result2)
     }
 
     @discardableResult public func approveLicense(password: String, url: URL) -> Int {
-        logger.verbose("Approving License...")
+        logger.log("Approving License...")
         let result = runSudo(command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild", password: password, args: ["-license", "accept"])
-        logger.verbose("Approving License \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
+        logger.log("Approving License \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return Int(result)
     }
 
     @discardableResult public func installComponents(password: String, url: URL) -> Int {
-        logger.verbose("Install additional components...")
+        logger.log("Install additional components...")
         let result = runSudo(command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild", password: password, args: ["-runFirstLaunch"])
-        logger.verbose("Install additional components \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
+        logger.log("Install additional components \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return Int(result)
     }
 
@@ -512,8 +576,10 @@ public class xcinfoCore {
         } catch {
             logger.error("Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcinfo.session'.")
         }
-        let olymp = OlympUs(logger: logger)
-        olymp.cleanupCookies()
+
+        session.configuration.httpCookieStorage?.removeCookies(since: Date.distantPast)
+        UserDefaults.standard.removeObject(forKey: "cookies")
+        
         logger.log("Removed stored cookies.")
     }
 
@@ -529,6 +595,10 @@ public class xcinfoCore {
         let pipeBetween = Pipe()
         taskOne.standardOutput = pipeBetween
         taskTwo.standardInput = pipeBetween
+
+        let outputPipe = Pipe()
+        taskTwo.standardOutput = outputPipe
+        taskTwo.standardError = outputPipe
 
         taskOne.launch()
         taskOne.waitUntilExit()

@@ -16,6 +16,9 @@ func setupCommands() {
     rootCommand.add(subCommand: cleanupCommand)
     rootCommand.add(subCommand: installedCommand)
     rootCommand.add(subCommand: uninstallCommand)
+    #if DEBUG
+    rootCommand.add(subCommand: installExtractedXcodeCommand)
+    #endif
     // Command adding placeholder, edit this line
 }
 

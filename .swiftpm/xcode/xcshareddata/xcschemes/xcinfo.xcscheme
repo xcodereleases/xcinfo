@@ -160,6 +160,14 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "installFromXIP"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-p /Applications/Xcode\ 11.2\ Beta\ 1.app/"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "installed"
             isEnabled = "NO">
          </CommandLineArgument>
@@ -173,7 +181,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--verbose"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "11"
@@ -185,11 +193,11 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-h"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--no-ansi"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
    </LaunchAction>

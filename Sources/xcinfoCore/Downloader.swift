@@ -17,11 +17,13 @@ class Downloader {
     private var disposeBag = Set<AnyCancellable>()
     private let unauthorizedURL = URL(string: "https://developer.apple.com/unauthorized/")!
     private let logger: Logger
-    private var olymp: OlympUs
+    private let olymp: OlympUs
+    private let sessionDelegateProxy: URLSessionDelegateProxy
 
-    init(logger: Logger) {
+    init(logger: Logger, olymp: OlympUs, sessionDelegateProxy: URLSessionDelegateProxy) {
         self.logger = logger
-        olymp = OlympUs(logger: logger)
+        self.olymp = olymp
+        self.sessionDelegateProxy = sessionDelegateProxy
     }
 
     private static let byteCountFormatter: ByteCountFormatter = {
@@ -45,7 +47,7 @@ class Downloader {
             request.addValue("gzip, deflate, br", forHTTPHeaderField: "Accept-Encoding")
             let task = self.olymp.session.downloadTask(with: request)
             let download = FileDownload(task: task,
-                                        delegateProxy: self.olymp.sessionDelegateProxy,
+                                        delegateProxy: self.sessionDelegateProxy,
                                         logger: self.logger,
                                         disableSleep: disableSleep)
 

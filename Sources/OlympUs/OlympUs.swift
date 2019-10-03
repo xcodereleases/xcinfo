@@ -134,8 +134,7 @@ extension OlympUs.AuthenticationAssets: Codable {}
 public class OlympUs {
     private var disposeBag = Set<AnyCancellable>()
     private let logger: Logger
-    public private(set) var sessionDelegateProxy = URLSessionDelegateProxy()
-
+    
     public private(set) var state: OlympUsState? {
         didSet {
             displayState()
@@ -144,12 +143,9 @@ public class OlympUs {
 
     public let session: URLSession
 
-    public init(logger: Logger) {
+    public init(logger: Logger, session: URLSession) {
         self.logger = logger
-        let config = URLSessionConfiguration.default
-        config.httpCookieAcceptPolicy = .always
-        config.httpCookieStorage = .shared
-        session = URLSession(configuration: config, delegate: sessionDelegateProxy, delegateQueue: nil)
+        self.session = session
         restoreCookies()
     }
 
@@ -573,10 +569,5 @@ extension OlympUs {
                 }
             }
         }
-    }
-
-    public func cleanupCookies() {
-        session.configuration.httpCookieStorage?.removeCookies(since: Date.distantPast)
-        UserDefaults.standard.removeObject(forKey: "cookies")
     }
 }

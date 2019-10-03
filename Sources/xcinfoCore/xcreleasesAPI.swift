@@ -154,39 +154,63 @@ extension KeyedVersions {
 extension SDKs: KeyedVersions {}
 extension Compilers: KeyedVersions {}
 
-enum XCAPIError: Error {
+enum XCAPIError: Error, CustomStringConvertible {
     case invalidResponse
-    case invalidList
     case invalidCache
     case versionNotFound
     case downloadInterrupted
     case couldNotMoveToTemporaryFile
-    case couldNotExtractFile
     case couldNotMoveToApplicationsFolder
-    case unauthorized
+    case timeout
+
+    var description: String {
+        switch self {
+        case .invalidResponse:
+            return "invalid response"
+        case .invalidCache:
+            return "invalid cache file"
+        case .versionNotFound:
+            return "version not found"
+        case .downloadInterrupted:
+            return "download was interrupted"
+        case .couldNotMoveToTemporaryFile:
+            return "could not move downloaded file into temporary directory"
+        case .couldNotMoveToApplicationsFolder:
+            return "application could not be moved into /Applications"
+        case .timeout:
+            return "the request timed out"
+        }
+    }
 }
 
 class xcreleasesAPI {
     public let baseURL: URL
     private let logger: Logger
     private var disposeBag = Set<AnyCancellable>()
+    private let session: URLSession
 
-    init(baseURL: URL, logger: Logger) {
+    init(baseURL: URL, logger: Logger, session: URLSession) {
         self.baseURL = baseURL
         self.logger = logger
+        self.session = session
     }
 
     public func remoteList() -> Future<[Xcode], XCAPIError> {
-        Future { promise in
+        Future { [unowned session] promise in
             let request = URLRequest(url: self.baseURL)
-            URLSession.shared.dataTaskPublisher(for: request)
+            session.dataTaskPublisher(for: request)
                 .map { $0.data }
                 .decode(type: [Xcode].self, decoder: JSONDecoder())
                 .handleEvents(receiveOutput: { values in
                     self.cacheListResponse(content: values)
                 })
-                .sink(receiveCompletion: { foo in
-                    promise(.failure(.invalidResponse))
+                .sink(receiveCompletion: { completion in
+                    guard case let .failure(error) = completion else { return }
+                    if (error as NSError).code == NSURLErrorTimedOut {
+                        promise(.failure(.timeout))
+                    } else {
+                        promise(.failure(.invalidResponse))
+                    }
                 }, receiveValue: { values in
                     promise(.success(values))
                 })
