@@ -408,27 +408,30 @@ public class xcinfoCore {
         RunLoop.main.run()
     }
 
-    public func installXcode(from url: URL, skipSymlinkCreation: Bool, skipXcodeSelection: Bool) {
+    public func installXcode(from url: URL, skipSymlinkCreation: Bool, skipXcodeSelection: Bool, skipVerification: Bool = false) {
         list(updateList: true)
             .sink { xcodes in
                 self.installXcode(from: url,
                                   knownXcodes: xcodes,
                                   skipSymlinkCreation: skipSymlinkCreation,
-                                  skipXcodeSelection: skipXcodeSelection)
+                                  skipXcodeSelection: skipXcodeSelection,
+                                  skipVerification: skipVerification)
         }
         .store(in: &disposeBag)
 
         RunLoop.main.run()
     }
 
-    private func installXcode(from url: URL, knownXcodes: [Xcode], skipSymlinkCreation: Bool, skipXcodeSelection: Bool) {
+    private func installXcode(from url: URL, knownXcodes: [Xcode], skipSymlinkCreation: Bool, skipXcodeSelection: Bool, skipVerification: Bool = false) {
         self.logger.beginSection("Installing")
 
-        let xcodeVerification = self.verifyXcode(at: url)
-        guard xcodeVerification == EXIT_SUCCESS else {
-            self.logger.error("Xcode verification failed.")
-            try? FileManager.default.removeItem(at: url)
-            exit(Int32(xcodeVerification))
+        if !skipVerification {
+            let xcodeVerification = self.verifyXcode(at: url)
+            guard xcodeVerification == EXIT_SUCCESS else {
+                self.logger.error("Xcode verification failed.")
+                try? FileManager.default.removeItem(at: url)
+                exit(Int32(xcodeVerification))
+            }
         }
 
         var passwordAttempts = 0

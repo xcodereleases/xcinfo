@@ -46,6 +46,7 @@ private func execute(flags: Flags, args: [String]) {
     let core = xcinfoCore(verbose: isVerbose, useANSI: useANSI)
     core.installXcode(from: url,
                       skipSymlinkCreation: skipSymlinkCreation,
-                      skipXcodeSelection: skipXcodeSelection)
+                      skipXcodeSelection: skipXcodeSelection,
+                      skipVerification: true)
 }
 #endif

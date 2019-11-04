@@ -160,7 +160,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "installFromXIP"
+            argument = "installExtractedXcode"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
