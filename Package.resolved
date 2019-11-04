@@ -30,10 +30,10 @@
       },
       {
         "package": "Guaka",
-        "repositoryURL": "https://github.com/trispo/Guaka.git",
+        "repositoryURL": "https://github.com/nsomar/Guaka.git",
         "state": {
           "branch": "master",
-          "revision": "35bfea0338248630a9d25a478d3362e5fa085a87",
+          "revision": "e52eb523b152e04fa5dff56bed01e805062ce0ff",
           "version": null
         }
       },
