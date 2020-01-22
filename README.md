@@ -12,9 +12,11 @@
 ## Installation
 
 ### Manually
-- checkout
-- run `swift build -c release`
-- run `cp .build/release/xcinfo /usr/local/bin`
+```
+$ git clone https://github.com/xcodereleases/xcinfo.git
+$ cd xcinfo
+$ make
+```
 
 ### homebrew
 - tbd
