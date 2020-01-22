@@ -5,6 +5,10 @@
 - finds and lists installed Xcode version on hard drive
 - removes installed Xcode versions
 
+## Requirements
+- macOS 10.15 (Catalina)
+- Swift 5.1
+
 ## Installation
 
 ### Manually
