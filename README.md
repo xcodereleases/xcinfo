@@ -46,6 +46,7 @@
 ## Screenshots
 
 ## TODO
+- sudo support without storing user password in memory
 - `latest` argument for install subcommand (e.g. `xcinfo install latest`)
 - man page
 - tests
