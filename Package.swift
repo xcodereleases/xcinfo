@@ -59,7 +59,7 @@ let package = Package(
         ),
         .target(
             name: "OlympUs",
-            dependencies: ["XCIFoundation"]
+            dependencies: ["XCIFoundation", "Prompt"]
         ),
     ]
 )
