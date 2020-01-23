@@ -15,7 +15,8 @@ private func configuration(command: Command) {
     command.add(flags: [
         Flag(longName: "version",
              value: false,
-             description: "Show the version number of xcinfo"),
+             description: "Show the version number of xcinfo",
+             inheritable: true),
         Flag(longName: "no-ansi",
              value: false,
              description: "Show output without ANSI codes",
@@ -29,7 +30,7 @@ private func configuration(command: Command) {
 
     command.defaultSubcommand = infoCommand
 
-    command.preRun = { flags, _ in
+    command.inheritablePreRun = { flags, _ in
         if flags.getBool(name: "version") == true {
             print(xcinfoVersion)
             return false
