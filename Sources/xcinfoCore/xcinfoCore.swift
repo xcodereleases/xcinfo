@@ -439,6 +439,7 @@ public class xcinfoCore {
         var possiblePassword: String?
         repeat {
             passwordAttempts += 1
+            self.logger.log("Prompting for password. Attempt \(passwordAttempts)!")
             let prompt: String = {
                 if passwordAttempts == 1 {
                     return "Please enter your password:"
@@ -475,7 +476,9 @@ public class xcinfoCore {
     private func getPassword(prompt: String) -> String? {
         do {
             let password = try Credentials.ask(prompt: prompt, secure: true) { pwd in
+                logger.log("Verifying inserted password ...")
                 let sudoExitStatus = self.runSudo(command: "ls", password: pwd, args: [])
+                logger.log("Success \(sudoExitStatus == EXIT_SUCCESS)")
                 return sudoExitStatus == EXIT_SUCCESS
             }
             return password
