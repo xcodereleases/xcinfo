@@ -3,42 +3,36 @@
 //  MIT license - see LICENSE.md
 //
 
-import Guaka
+import ArgumentParser
 import xcinfoCore
 
-var listCommand = Command(
-    usage: "list",
-    configuration: configuration,
-    run: execute
-)
-
-private func configuration(command: Command) {
-    command.shortMessage = "List all available Xcode versions"
-    command.longMessage = "List all available Xcode versions available according to xcodereleases.com."
-    command.add(flags: [
-        Flag(shortName: "a",
-             longName: "all",
-             value: false,
-             description: "Show all available versions"),
-
-        Flag(shortName: "g",
-             longName: "only-gm",
-             value: false,
-             description: "Show only Golden Master versions"),
-
-        Flag(longName: "no-list-update",
-             value: false,
-             description: "Skip updating the list of known Xcode versions before install"),
-    ])
+enum ListOption: EnumerableFlag {
+    case all
+    case onlyGM
+    case last10
 }
 
-private func execute(flags: Flags, args _: [String]) {
-    let isVerbose = flags.getBool(name: "verbose") == true
-    let showAllVersions = flags.getBool(name: "all") == true
-    let useANSI = flags.getBool(name: "no-ansi") == false
-    let updateVersionList = flags.getBool(name: "no-list-update") == false
-    let showOnlyGMs = flags.getBool(name: "only-gm") == true
+extension XCInfo {
+    struct List: ParsableCommand {
+        static var configuration = CommandConfiguration(
+            abstract: "List all available Xcode versions",
+            discussion: "List all available Xcode versions available according to xcodereleases.com."
+        )
 
-    let core = xcinfoCore(verbose: isVerbose, useANSI: useANSI)
-    core.list(showAllVersions: showAllVersions, showOnlyGMs: showOnlyGMs, updateList: updateVersionList)
+        @OptionGroup()
+        var globals: DefaultOptions
+
+        @Flag(default: .last10)
+        var listOption: ListOption
+
+        @Flag(default: true, inversion: .prefixedNo,
+            help: "Update the list of known Xcode versions."
+        )
+        var updateList: Bool
+
+        func run() throws {
+            let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
+            core.list(showAllVersions: listOption == .all, showOnlyGMs: listOption == .onlyGM, updateList: updateList)
+        }
+    }
 }

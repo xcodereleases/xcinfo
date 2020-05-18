@@ -3,30 +3,32 @@
 //  MIT license - see LICENSE.md
 //
 
-import Guaka
+import ArgumentParser
 import xcinfoCore
 
-var uninstallCommand = Command(
-    usage: "uninstall [version]",
-    configuration: configuration,
-    run: execute
-)
+extension XCInfo {
+    struct Uninstall: ParsableCommand {
+        static var configuration = CommandConfiguration(
+            abstract: "Uninstall an Xcode version",
+            discussion: "Uninstall a specific version of Xcode."
+        )
 
-private func configuration(command: Command) {
-    command.shortMessage = "Uninstall an Xcode version"
-    command.longMessage = "Uninstall a specific version of Xcode."
-    command.example = #"xcinfo uninstall\#nxcinfo uninstall 11\#nxcinfo uninstall "11 Beta 5""#
-    command.aliases = ["remove"]
-}
+        @OptionGroup()
+        var globals: DefaultOptions
 
-private func execute(flags: Flags, args: [String]) {
-    let isVerbose = flags.getBool(name: "verbose") == true
-    let useANSI = flags.getBool(name: "no-ansi") == false
+        @Argument(
+            help: "A version number of an Xcode version."
+        )
+        var xcodeVersion: String?
 
-    guard args.count <= 1 else {
-        return print("A VERSION argument is required.".f.Red)
+        @Flag(default: true, inversion: .prefixedNo,
+            help: "Update the list of known Xcode versions."
+        )
+        var updateList: Bool
+
+        func run() throws {
+            let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
+            core.uninstall(xcodeVersion?.lowercased(), updateVersionList: updateList)
+        }
     }
-
-    let core = xcinfoCore(verbose: isVerbose, useANSI: useANSI)
-    core.uninstall(args.first?.lowercased())
 }

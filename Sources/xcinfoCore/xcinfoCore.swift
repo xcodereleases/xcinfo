@@ -13,6 +13,13 @@ import Run
 import XCIFoundation
 import XCModel
 
+func fail(statusCode: Int, errorMessage: String? = nil) -> Never {
+    if let errorMessage = errorMessage {
+        print(errorMessage)
+    }
+    exit(Int32(statusCode))
+}
+
 public class xcinfoCore {
     private let logger: Logger
     private var disposeBag = Set<AnyCancellable>()
@@ -54,9 +61,13 @@ public class xcinfoCore {
     private func findXcodes(for version: String?, knownVersions: [Xcode]) -> [Xcode] {
         var releases = knownVersions
         if let version = version {
-            let (fullVersion, betaVersion) = extractVersionParts(from: version)
-            releases = releases.filter {
-                filter(xcode: $0, fullVersion: fullVersion, betaVersion: betaVersion, version: version)
+            if version == "latest", let latest = releases.first {
+                releases = [latest]
+            } else {
+                let (fullVersion, betaVersion) = extractVersionParts(from: version)
+                releases = releases.filter {
+                    filter(xcode: $0, fullVersion: fullVersion, betaVersion: betaVersion, version: version)
+                }
             }
         }
         return releases
@@ -117,8 +128,8 @@ public class xcinfoCore {
         }
     }
 
-    public func uninstall(_ version: String?) {
-        list(updateList: true)
+    public func uninstall(_ version: String?, updateVersionList: Bool) {
+        list(updateList: updateVersionList)
             .sink { knownVersions in
                 guard !knownVersions.isEmpty else {
                     self.logger.error("No Xcode releases found.")
@@ -142,8 +153,11 @@ public class xcinfoCore {
                             for xcodeApp in xcodes {
                                 let attributedName = xcodeApp.xcode.attributedDisplayName
                                 let width = longestXcodeNameLength + attributedName.count - attributedName.reset().count
-                                let choice = "\(attributedName.paddedWithSpaces(to: width)) – \(xcodeApp.url.path.f.Cyan)"
+                                var choice = "\(attributedName.paddedWithSpaces(to: width)) – \(xcodeApp.url.path.f.Cyan)"
 
+                                if !self.logger.useANSI {
+                                    choice = choice.reset()
+                                }
                                 settings.addChoice(choice) { xcodeApp }
                             }
                         }
@@ -151,7 +165,8 @@ public class xcinfoCore {
                         selected = xcodes[0]
                     }
 
-                    if agree("Are you sure you want to uninstall Xcode \(selected.xcode.attributedDisplayName)?") {
+                    let displayName = self.logger.useANSI ? selected.xcode.attributedDisplayName : selected.xcode.displayName
+                    if agree("Are you sure you want to uninstall Xcode \(displayName)?") {
                         do {
                             self.logger.verbose("Uninstalling Xcode \(selected.xcode.description) from \(selected.url.path) ...")
                             try FileManager.default.removeItem(at: selected.url)
@@ -426,11 +441,11 @@ public class xcinfoCore {
         self.logger.beginSection("Installing")
 
         if !skipVerification {
-            let xcodeVerification = self.verifyXcode(at: url)
-            guard xcodeVerification == EXIT_SUCCESS else {
+            let xcodeVerificationResult = self.verifyXcode(at: url)
+            guard xcodeVerificationResult == EXIT_SUCCESS else {
                 self.logger.error("Xcode verification failed.")
                 try? FileManager.default.removeItem(at: url)
-                exit(Int32(xcodeVerification))
+                fail(statusCode: xcodeVerificationResult)
             }
         }
 

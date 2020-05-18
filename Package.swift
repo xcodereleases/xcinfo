@@ -16,7 +16,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/nsomar/Guaka.git", .branch("master")),
+        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.6")),
         .package(url: "https://github.com/getGuaka/Prompt.git", from: "0.0.0"),
         .package(url: "https://github.com/getGuaka/Colorizer.git", from: "0.0.0"),
         .package(url: "https://github.com/getGuaka/Run.git", from: "0.1.0"),
@@ -39,7 +39,7 @@ let package = Package(
         ),
         .target(
             name: "xcinfo",
-            dependencies: ["xcinfoCore", "Guaka", "Prompt", "Colorizer", "Run", "XCIFoundation"],
+            dependencies: ["ArgumentParser", "xcinfoCore", "Prompt", "Colorizer", "Run", "XCIFoundation"],
             linkerSettings: [
                 LinkerSetting.linkedFramework("PackageKit"),
                 LinkerSetting.unsafeFlags(["-F/System/Library/PrivateFrameworks/"]),
@@ -51,7 +51,7 @@ let package = Package(
         ),
         .testTarget(
             name: "xcinfoCoreTests",
-            dependencies: ["xcinfoCore", "Prompt", "Run", "XCUnxip", "Guaka"],
+            dependencies: ["xcinfoCore", "Prompt", "Run", "XCUnxip"],
             linkerSettings: [
                 LinkerSetting.linkedFramework("PackageKit"),
                 LinkerSetting.unsafeFlags(["-F/System/Library/PrivateFrameworks/"]),

@@ -3,24 +3,23 @@
 //  MIT license - see LICENSE.md
 //
 
-import Guaka
+import ArgumentParser
 import xcinfoCore
 
-var cleanupCommand = Command(
-    usage: "cleanup",
-    configuration: configuration,
-    run: execute
-)
+extension XCInfo {
+    struct Cleanup: ParsableCommand {
+        static var configuration = CommandConfiguration(
+            abstract: "Remove stored credentials",
+            discussion: "Remove stored Apple ID credentials and session authentification items from the macOS keychain."
+        )
 
-private func configuration(command: Command) {
-    command.shortMessage = "Remove stored credentials"
-    command.longMessage = "Remove stored Apple ID credentials and session authentification items from the macOS keychain."
-}
+        @OptionGroup()
+        var globals: DefaultOptions
 
-private func execute(flags: Flags, args _: [String]) {
-    let isVerbose = flags.getBool(name: "verbose") == true
-    let useANSI = flags.getBool(name: "no-ansi") == false
+        func run() throws {
+            let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
+            core.cleanup()
 
-    let core = xcinfoCore(verbose: isVerbose, useANSI: useANSI)
-    core.cleanup()
+        }
+    }
 }

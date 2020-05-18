@@ -3,34 +3,27 @@
 //  MIT license - see LICENSE.md
 //
 
-import Combine
-import Foundation
-import Guaka
-import Run
-import XCIFoundation
+import ArgumentParser
 import xcinfoCore
 
-var installedCommand = Command(
-    usage: "installed",
-    configuration: configuration,
-    run: execute
-)
+extension XCInfo {
+    struct Installed: ParsableCommand {
+        static var configuration = CommandConfiguration(
+            abstract: "Show installed Xcode versions",
+            discussion: "Show all installed versions of Xcode and their location on this computer."
+        )
 
-private func configuration(command: Command) {
-    command.shortMessage = "Show installed Xcode versions"
-    command.longMessage = "Show all installed versions of Xcode and their location on this computer."
-    command.add(flags: [
-        Flag(longName: "no-list-update",
-             value: false,
-             description: "Skip updating the list of Xcode versions before running the command"),
-    ])
-}
+        @OptionGroup()
+        var globals: DefaultOptions
 
-private func execute(flags: Flags, args _: [String]) {
-    let isVerbose = flags.getBool(name: "verbose") == true
-    let useANSI = flags.getBool(name: "no-ansi") == false
-    let updateVersionList = flags.getBool(name: "no-list-update") == false
+        @Flag(default: true, inversion: .prefixedNo,
+            help: "Update the list of known Xcode versions."
+        )
+        var updateList: Bool
 
-    let core = xcinfoCore(verbose: isVerbose, useANSI: useANSI)
-    core.installedXcodes(updateList: updateVersionList)
+        func run() throws {
+            let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
+            core.installedXcodes(updateList: updateList)
+        }
+    }
 }
