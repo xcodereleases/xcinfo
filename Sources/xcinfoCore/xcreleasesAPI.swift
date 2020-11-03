@@ -40,11 +40,13 @@ extension Xcode: CustomStringConvertible, CustomDebugStringConvertible {
             components.append("Beta \(version)")
         } else if case let .dp(version) = version.release {
             components.append("DP \(version)")
+        } else if case let .rc(version) = version.release {
+            components.append("RC \(version)")
         }
         return components.joined(separator: " ")
     }
 
-    var displayName: String { "\(displayVersion) (\(version.build))" }
+    var displayName: String { "\(displayVersion) (\(version.build ?? ""))" }
 
     var filename: String {
         let fileManager = FileManager.default
@@ -62,7 +64,7 @@ extension Xcode: CustomStringConvertible, CustomDebugStringConvertible {
 
     var attributedDisplayVersion: String { displayVersion.cyan }
 
-    public var attributedDisplayName: String { "\(attributedDisplayVersion) (\(version.build))" }
+    public var attributedDisplayName: String { "\(attributedDisplayVersion) (\(version.build ?? ""))" }
 }
 
 extension Xcode {
@@ -110,8 +112,10 @@ extension Version: Comparable, Hashable {
         }()
 
         if lhs.isGM, rhs.isGM {
-            if numberComparision == .orderedSame {
-                return lhs.build.compare(rhs.build, options: .numeric) == .orderedAscending
+            if numberComparision == .orderedSame,
+               let lhsBuild = lhs.build,
+               let rhsBuild = rhs.build {
+                return lhsBuild.compare(rhsBuild, options: .numeric) == .orderedAscending
             } else {
                 return numberComparision == .orderedAscending
             }
@@ -122,6 +126,8 @@ extension Version: Comparable, Hashable {
             case let (.beta(lhsVersion), .beta(rhsVersion)):
                 return lhsVersion < rhsVersion
             case let (.dp(lhsVersion), .dp(rhsVersion)):
+                return lhsVersion < rhsVersion
+            case let (.rc(lhsVersion), .rc(rhsVersion)):
                 return lhsVersion < rhsVersion
             default:
                 return false

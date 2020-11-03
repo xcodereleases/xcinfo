@@ -108,12 +108,12 @@ public class xcinfoCore {
                 guard case let .beta(version) = xcode.version.release else { return false }
                 return version == betaVersion
             }()
-            let areSameVersions = xcode.version.build.lowercased() == version
+            let areSameVersions = xcode.version.build?.lowercased() == version
 
             return versionNumberHaveSamePrefix && betaVersionsAreSame || areSameVersions
         } else {
             return xcode.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true ||
-                xcode.version.build.lowercased() == version
+                xcode.version.build?.lowercased() == version
         }
     }
 
@@ -297,7 +297,7 @@ public class xcinfoCore {
                         for (name, versions) in sdks {
                             let sdkName = "\(name) SDK:"
                             let version = versions[0]
-                            self.logger.log("\(sdkName.paddedWithSpaces(to: longestSDKName)) \(version.build)")
+                            self.logger.log("\(sdkName.paddedWithSpaces(to: longestSDKName)) \(version.build ?? "")")
                         }
                     }
                     self.logger.beginParagraph("Compilers")
@@ -306,7 +306,7 @@ public class xcinfoCore {
                         for (name, versions) in compilers {
                             let version = versions[0]
                             let compilerName = "\(name) \(version.number ?? ""):"
-                            self.logger.log("\(compilerName.paddedWithSpaces(to: longestName)) \(version.build)")
+                            self.logger.log("\(compilerName.paddedWithSpaces(to: longestName)) \(version.build ?? "")")
                         }
                     }
 
