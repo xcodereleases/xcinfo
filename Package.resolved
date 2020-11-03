@@ -11,15 +11,6 @@
         }
       },
       {
-        "package": "Colorizer",
-        "repositoryURL": "https://github.com/getGuaka/Colorizer.git",
-        "state": {
-          "branch": null,
-          "revision": "2ccc99bf1715e73c4139e8d40b6e6b30be975586",
-          "version": "0.2.1"
-        }
-      },
-      {
         "package": "XcodeReleases",
         "repositoryURL": "https://github.com/xcodereleases/data.git",
         "state": {
@@ -53,6 +44,15 @@
           "branch": null,
           "revision": "f2b5a06440ea87eba1a167cab37bf6496646c52e",
           "version": "1.3.4"
+        }
+      },
+      {
+        "package": "Rainbow",
+        "repositoryURL": "https://github.com/onevcat/Rainbow",
+        "state": {
+          "branch": null,
+          "revision": "626c3d4b6b55354b4af3aa309f998fae9b31a3d9",
+          "version": "3.2.0"
         }
       },
       {

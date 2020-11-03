@@ -5,6 +5,7 @@
 
 import ArgumentParser
 import xcinfoCore
+
 struct XCInfo: ParsableCommand {
     static var configuration = CommandConfiguration(
         commandName: "xcinfo",
@@ -16,12 +17,43 @@ struct XCInfo: ParsableCommand {
             Installed.self,
             Uninstall.self,
             Cleanup.self,
+            Test.self,
         ],
         defaultSubcommand: Info.self
     )
 }
 
+import Foundation
 
+extension XCInfo {
+    struct Test: ParsableCommand {
+        func run() throws {
+            print("First attempt")
+            if let scriptObject = NSAppleScript(source: "do shell script \"xcode-select -s '/Applications/Xcode 11.4.1.app'\" with administrator privileges") {
+                var error: NSDictionary?
+                let output = scriptObject.executeAndReturnError(&error)
+
+                if let error = error {
+                    print("Error: \(error)")
+                } else {
+                    print(output.stringValue ?? "No output")
+                }
+            }
+
+            print("Second attempt")
+            if let scriptObject = NSAppleScript(source: "do shell script \"xcode-select -s '/Applications/Xcode.app'\" with administrator privileges") {
+                var error: NSDictionary?
+                let output = scriptObject.executeAndReturnError(&error)
+
+                if let error = error {
+                    print("Error: \(error)")
+                } else {
+                    print(output.stringValue ?? "No output")
+                }
+            }
+        }
+    }
+}
 
 struct DefaultOptions: ParsableArguments {
     @Flag(

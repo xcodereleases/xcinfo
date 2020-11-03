@@ -3,7 +3,7 @@
 //  MIT license - see LICENSE.md
 //
 
-import Colorizer
+import Rainbow
 import Combine
 import Foundation
 import XCIFoundation
@@ -60,7 +60,7 @@ extension Xcode: CustomStringConvertible, CustomDebugStringConvertible {
     public var description: String { displayName }
     public var debugDescription: String { displayName }
 
-    var attributedDisplayVersion: String { displayVersion.f.Cyan }
+    var attributedDisplayVersion: String { displayVersion.cyan }
 
     public var attributedDisplayName: String { "\(attributedDisplayVersion) (\(version.build))" }
 }

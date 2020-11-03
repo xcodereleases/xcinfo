@@ -181,7 +181,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "latest"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "list"
@@ -196,8 +196,8 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "&quot;11.4.1&quot;"
-            isEnabled = "NO">
+            argument = "&quot;12&quot;"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--no-symlink"
@@ -217,7 +217,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--no-ansi"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "test"

@@ -3,52 +3,50 @@
 //  MIT license - see LICENSE.md
 //
 
-import Colorizer
+import Rainbow
 import Foundation
 
 public struct Logger {
-    public private(set) var useANSI: Bool
     public private(set) var isVerbose: Bool
 
-    public init(isVerbose: Bool, useANSI: Bool) {
+    public init(isVerbose: Bool) {
         self.isVerbose = isVerbose
-        self.useANSI = useANSI
     }
 
     public func beginSection(_ message: String) {
-        let sectionTitle = "\n\(message.f.Cyan.s.Bold)"
-        write(useANSI ? sectionTitle : sectionTitle.reset(), onSameLine: false)
+        let sectionTitle = "\n\(message.cyan.bold)"
+        write(sectionTitle, onSameLine: false)
     }
 
     public func beginParagraph(_ message: String) {
-        let sectionTitle = "\n\(message.s.Bold)"
-        write(useANSI ? sectionTitle : sectionTitle.reset(), onSameLine: false)
+        let sectionTitle = "\n\(message.bold)"
+        write(sectionTitle, onSameLine: false)
     }
 
     public func log(_ message: String, onSameLine: Bool = false) {
-        write(useANSI ? message : message.reset(), onSameLine: onSameLine)
+        write(message, onSameLine: onSameLine)
     }
 
     public func verbose(_ message: String, onSameLine: Bool = false) {
         guard isVerbose else { return }
-        write(useANSI ? message : message.reset(), onSameLine: onSameLine)
+        write(message, onSameLine: onSameLine)
     }
 
     public func success(_ message: String) {
-        write(useANSI ? message.f.Cyan : message.reset(), onSameLine: false)
+        write(message.cyan, onSameLine: false)
     }
 
     public func error(_ message: String) {
-        write(useANSI ? message.f.Red : message.reset(), onSameLine: false)
+        write(message.red, onSameLine: false)
     }
 
     private func write(_ message: String, onSameLine: Bool) {
         var msg = message
-        if onSameLine, useANSI {
+        if onSameLine {
             msg.insert(contentsOf: "\u{1B}[1A\u{1B}[K", at: msg.startIndex)
         }
         print(msg)
-        if onSameLine, useANSI {
+        if onSameLine {
             fflush(__stdoutp)
         }
     }

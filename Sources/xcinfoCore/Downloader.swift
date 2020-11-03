@@ -3,6 +3,7 @@
 //  MIT license - see LICENSE.md
 //
 
+import Rainbow
 import Combine
 import Foundation
 import OlympUs
@@ -65,7 +66,7 @@ class Downloader {
                             self.logger.log("Source: \(url) (\(Self.byteCountFormatter.string(from: download.totalBytes)))\n", onSameLine: true)
                             hasLoggedTotalSize = true
                         }
-                        if self.logger.useANSI {
+                        if Rainbow.enabled {
                             progressDisplay.ratio = download.progress
                             let logMessage = [
                                 progressDisplay.representation,
@@ -75,6 +76,7 @@ class Downloader {
                             self.logger.log(logMessage, onSameLine: true)
                         } else {
                             let progress = Int(100 * download.progress)
+                            print(String(format: "%.1f %", 100 * download.progress))
                             if progress.isMultiple(of: 5), previouslyDisplayedNonANSIProgress != progress {
                                 self.logger.log("Download progress: \(progress)%")
                                 previouslyDisplayedNonANSIProgress = progress

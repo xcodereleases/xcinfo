@@ -7,6 +7,7 @@ import Combine
 import Foundation
 import XCIFoundation
 import XCUnxip
+import Rainbow
 
 class Extractor {
     enum State {
@@ -57,7 +58,7 @@ class Extractor {
                     self.logger.log("Probably done: \(statusMessage)")
                 default:
                     progressDisplay.ratio = ratio
-                    if self.logger.useANSI {
+                    if Rainbow.enabled {
                         self.logger.log("\(progressDisplay.representation)", onSameLine: true)
                     } else {
                         if Int(progress).isMultiple(of: 5), previouslyDisplayedNonANSIProgress != Int(progress) {

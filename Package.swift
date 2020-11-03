@@ -18,7 +18,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.6")),
         .package(url: "https://github.com/getGuaka/Prompt.git", from: "0.0.0"),
-        .package(url: "https://github.com/getGuaka/Colorizer.git", from: "0.0.0"),
+        .package(url: "https://github.com/onevcat/Rainbow", from: "3.0.0"),
         .package(url: "https://github.com/getGuaka/Run.git", from: "0.1.0"),
         .package(url: "https://github.com/xcodereleases/data.git", .branch("master"))
     ],
@@ -27,19 +27,15 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "XCIFoundation",
-            dependencies: ["Colorizer"]
+            dependencies: ["Rainbow"]
         ),
         .target(
             name: "XCUnxip",
             dependencies: []
         ),
-        .testTarget(
-            name: "XCIFoundationTests",
-            dependencies: ["XCIFoundation"]
-        ),
         .target(
             name: "xcinfo",
-            dependencies: ["ArgumentParser", "xcinfoCore", "Prompt", "Colorizer", "Run", "XCIFoundation"],
+            dependencies: ["ArgumentParser", "xcinfoCore", "Prompt", "Rainbow", "Run", "XCIFoundation"],
             linkerSettings: [
                 LinkerSetting.linkedFramework("PackageKit"),
                 LinkerSetting.unsafeFlags(["-F/System/Library/PrivateFrameworks/"]),

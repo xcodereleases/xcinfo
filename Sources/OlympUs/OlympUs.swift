@@ -3,7 +3,7 @@
 //  MIT license - see LICENSE.md
 //
 
-import Colorizer
+import Rainbow
 import Combine
 import Foundation
 import Prompt
@@ -67,7 +67,7 @@ private struct VerifyPhoneRequest: Codable {
     }
 
     let phoneNumber: VerifyPhoneRequest.TrustedNumber
-    let mode = "sms"
+    var mode = "sms"
     var securityCode: SecurityCode? = nil
 }
 
@@ -342,7 +342,7 @@ public class OlympUs {
                     let requiredCodeLength = response.securityCode.length
                     self.logger.log("\nTwo-factor authentication is enabled for your account.")
                     self.logger.log("Please enter a \(requiredCodeLength) digit verification code generated on one of your trusted devices.")
-                    self.logger.log("Type '\("sms".f.Magenta)' to receive a verification code on a trusted phone number.")
+                    self.logger.log("Type '\("sms".magenta)' to receive a verification code on a trusted phone number.")
                     let input = ask("Apple ID Verification Code: ", type: String.self) { settings in
                         settings.addInvalidCase("Invalide code length") { value in
                             value != "sms" && requiredCodeLength != value.count

@@ -31,7 +31,7 @@ struct ProgressDisplay {
         if fullCharWidth < Double(width) {
             let emptyChars = String(repeating: " ", count: Int(Double(width) - fullCharWidth - 1))
             let bar = fullChars + partChars[partWidth] + emptyChars
-            return "[\(bar.f.Cyan)] \(formatter.string(for: ratio) ?? "0")"
+            return "[\(bar.cyan)] \(formatter.string(for: ratio) ?? "0")"
         } else {
             return "[\(fullChars)] 100.0%"
         }

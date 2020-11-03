@@ -4,7 +4,7 @@
 //
 
 import Cocoa
-import Colorizer
+import Rainbow
 import Combine
 import Foundation
 import OlympUs
@@ -33,7 +33,8 @@ public class xcinfoCore {
     private lazy var downloader = Downloader(logger: logger, olymp: olymp, sessionDelegateProxy: sessionDelegateProxy)
 
     public init(verbose: Bool, useANSI: Bool) {
-        logger = Logger(isVerbose: verbose, useANSI: useANSI)
+        Rainbow.enabled = useANSI
+        logger = Logger(isVerbose: verbose)
         let config = URLSessionConfiguration.default
         config.httpCookieAcceptPolicy = .always
         config.httpCookieStorage = .shared
@@ -149,15 +150,12 @@ public class xcinfoCore {
                         self.logger.verbose("Found: \(listFormatter.string(from: xcodes.map { $0.xcode.description })!)")
 
                         selected = choose("Please choose the version you want to uninstall: ", type: XcodeApplication.self) { settings in
-                            let longestXcodeNameLength = xcodes.map { $0.xcode.description }.max(by: { $1.count > $0.count })!.count
+                            let longestXcodeNameLength = xcodes.map { $0.xcode.attributedDisplayName }.max(by: { $1.count > $0.count })!.count
                             for xcodeApp in xcodes {
                                 let attributedName = xcodeApp.xcode.attributedDisplayName
-                                let width = longestXcodeNameLength + attributedName.count - attributedName.reset().count
-                                var choice = "\(attributedName.paddedWithSpaces(to: width)) – \(xcodeApp.url.path.f.Cyan)"
+                                let width = longestXcodeNameLength + attributedName.count - attributedName.raw.count
+                                let choice = "\(attributedName.paddedWithSpaces(to: width)) – \(xcodeApp.url.path.cyan)"
 
-                                if !self.logger.useANSI {
-                                    choice = choice.reset()
-                                }
                                 settings.addChoice(choice) { xcodeApp }
                             }
                         }
@@ -165,7 +163,7 @@ public class xcinfoCore {
                         selected = xcodes[0]
                     }
 
-                    let displayName = self.logger.useANSI ? selected.xcode.attributedDisplayName : selected.xcode.displayName
+                    let displayName = selected.xcode.attributedDisplayName
                     if agree("Are you sure you want to uninstall Xcode \(displayName)?") {
                         do {
                             self.logger.verbose("Uninstalling Xcode \(selected.xcode.description) from \(selected.url.path) ...")
@@ -250,7 +248,7 @@ public class xcinfoCore {
                 for col in 0 ..< cols {
                     guard row + rows * col < xcodeVersions.count else { break }
                     let xcversion = xcodeVersions[row + rows * col]
-                    let width = columnWidth + xcversion.count - xcversion.reset().count
+                    let width = columnWidth + xcversion.count - xcversion.raw.count
                     strings.append(xcversion.paddedWithSpaces(to: width))
                 }
 
@@ -335,7 +333,7 @@ public class xcinfoCore {
             return xcodes.first
         default:
             if let releaseName = givenReleaseName {
-                logger.log("Found multiple possibilities for the requested version '\(releaseName.f.Cyan)'.")
+                logger.log("Found multiple possibilities for the requested version '\(releaseName.cyan)'.")
             } else {
                 logger.log("No version was provided. You can choose between the ten latest or cancel and use an argument.")
             }
@@ -343,7 +341,7 @@ public class xcinfoCore {
             let listedXcodeVersions = givenReleaseName == nil ? Array(xcodes.prefix(10)) : xcodes
             let selectedVersion = choose(prompt, type: Xcode.self) { settings in
                 for xcode in listedXcodeVersions {
-                    settings.addChoice(self.logger.useANSI ? xcode.attributedDisplayName : xcode.displayName) { xcode }
+                    settings.addChoice(xcode.attributedDisplayName) { xcode }
                 }
             }
             return selectedVersion
@@ -642,8 +640,8 @@ public class xcinfoCore {
                 let longestXcodeNameLength = xcodes.map { $0.xcode.description }.max(by: { $1.count > $0.count })!.count
                 xcodes.forEach {
                     let attributedName = $0.xcode.attributedDisplayName
-                    let width = longestXcodeNameLength + attributedName.count - attributedName.reset().count
-                    self.logger.log("\(attributedName.paddedWithSpaces(to: width)) – \($0.url.path.f.Cyan)")
+                    let width = longestXcodeNameLength + attributedName.count - attributedName.raw.count
+                    self.logger.log("\(attributedName.paddedWithSpaces(to: width)) – \($0.url.path.cyan)")
                 }
 
                 exit(EXIT_SUCCESS)

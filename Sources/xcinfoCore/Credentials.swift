@@ -24,7 +24,7 @@ public enum Credentials {
             }
         } else {
             print("Apple's Developer Download page requires a login.")
-            print("Please provide your Apple Developer Program account credentials.".s.Bold)
+            print("Please provide your Apple Developer Program account credentials.".bold)
 
             do {
                 let username = try Self.ask(prompt: "Username:")
