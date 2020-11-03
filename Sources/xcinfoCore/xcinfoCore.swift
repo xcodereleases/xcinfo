@@ -639,7 +639,10 @@ public class xcinfoCore {
                 let xcodes = self.installedXcodes(knownVersions: knownVersions)
                 let longestXcodeNameLength = xcodes.map { $0.xcode.description }.max(by: { $1.count > $0.count })!.count
                 xcodes.forEach {
-                    let attributedName = $0.xcode.attributedDisplayName
+                    let displayVersion = $0.xcode.displayVersion
+                    let attributedDisplayName = "\(displayVersion) (\($0.xcode.version.build ?? ""))"
+
+                    let attributedName = attributedDisplayName.cyan
                     let width = longestXcodeNameLength + attributedName.count - attributedName.raw.count
                     self.logger.log("\(attributedName.paddedWithSpaces(to: width)) – \($0.url.path.cyan)")
                 }
