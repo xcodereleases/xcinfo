@@ -35,7 +35,7 @@ public class xcinfoCore {
     public init(verbose: Bool, useANSI: Bool) {
         Rainbow.enabled = useANSI
         logger = Logger(isVerbose: verbose)
-        let config = URLSessionConfiguration.default
+        let config = URLSessionConfiguration.ephemeral
         config.httpCookieAcceptPolicy = .always
         config.httpCookieStorage = .shared
         config.timeoutIntervalForRequest = 5
