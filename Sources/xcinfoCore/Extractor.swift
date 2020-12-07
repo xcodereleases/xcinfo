@@ -62,7 +62,7 @@ class Extractor {
                         self.logger.log("\(progressDisplay.representation)", onSameLine: true)
                     } else {
                         if Int(progress).isMultiple(of: 5), previouslyDisplayedNonANSIProgress != Int(progress) {
-                            self.logger.log("\(statusMessage): \(Int(progress))%")
+                            self.logger.log("\(statusMessage): \(Int(progress)) %")
                             previouslyDisplayedNonANSIProgress = Int(progress)
                         }
                     }

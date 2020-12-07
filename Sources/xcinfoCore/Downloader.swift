@@ -78,11 +78,22 @@ class Downloader {
                             let progress = Int(100 * download.progress)
                             print(String(format: "%.1f %", 100 * download.progress))
                             if progress.isMultiple(of: 5), previouslyDisplayedNonANSIProgress != progress {
-                                self.logger.log("Download progress: \(progress)%")
+                                self.logger.log("Download progress: \(progress) %")
                                 previouslyDisplayedNonANSIProgress = progress
                             }
                         }
                     case .finished:
+                        if Rainbow.enabled {
+                            progressDisplay.ratio = 1
+                            let logMessage = [
+                                progressDisplay.representation,
+                                "remaining: \(Self.byteCountFormatter.string(from: Measurement(value: 0, unit: .bytes)))",
+                                "speed: \(Self.byteCountFormatter.string(from: download.downloadSpeed()))/s",
+                            ].joined(separator: ", ")
+                            self.logger.log(logMessage, onSameLine: true)
+                        } else {
+                            self.logger.log("Download progress: 100 %")
+                        }
                         guard let downloadedURL = download.downloadedURL else {
                             promise(.failure(.couldNotMoveToTemporaryFile))
                             return
