@@ -33,7 +33,7 @@ $ cd xcinfo
 $ make
 ```
 
-### 
+### Mint 
 ```
 $ mint install xcodereleases/xcinfo
 ```
