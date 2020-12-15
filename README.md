@@ -34,7 +34,9 @@ $ make
 ```
 
 ### homebrew
-- tbd
+```
+$ brew install xcinfo
+```
 
 ## Usage
 
