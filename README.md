@@ -33,6 +33,11 @@ $ cd xcinfo
 $ make
 ```
 
+### Mint 
+```
+$ mint install xcodereleases/xcinfo
+```
+
 ### homebrew
 ```
 $ brew install xcinfo
