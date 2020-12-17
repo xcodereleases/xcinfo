@@ -4,7 +4,7 @@ With `xcinfo` you can access all information available at xcodereleases.com and 
 
 ![Screenhot of the install progress](https://github.com/xcodereleases/xcinfo/blob/master/Assets/install.png?raw=true)
 
-```                                                                                                                                                                                     
+```
 USAGE: xcinfo <subcommand>
 
 OPTIONS:
@@ -33,7 +33,7 @@ $ cd xcinfo
 $ make
 ```
 
-### Mint 
+### Mint
 ```
 $ mint install xcodereleases/xcinfo
 ```
@@ -52,16 +52,16 @@ $ brew install xcinfo
 - list all available Xcode versions ever released by Apple
 
 ### install
-- download and install a version of Xcode 
+- download and install a version of Xcode
 
 ### installed
-- list Xcode versions installed in /Applications 
+- list Xcode versions installed in /Applications
 
 ### uninstall
 - removes an installed version of Xcode from /Applications
 
 ### cleanup
-- if something goes wrong this removes all entries stored in the keychain, all cookies, and user defaults  
+- if something goes wrong this removes all entries stored in the keychain, all cookies, and user defaults
 
 ## CI
 - no-ansi flag to suppress colored output
@@ -79,4 +79,3 @@ $ brew install xcinfo
 - man page
 - tests
 - include default data (when github is offline)
-- homebrew support?
