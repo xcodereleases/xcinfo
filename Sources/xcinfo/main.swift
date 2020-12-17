@@ -9,7 +9,7 @@ import xcinfoCore
 struct XCInfo: ParsableCommand {
     static var configuration = CommandConfiguration(
         commandName: "xcinfo",
-        version: "0.0.6",
+        version: version,
         subcommands: [
             Info.self,
             List.self,
