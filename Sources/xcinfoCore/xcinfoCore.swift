@@ -389,10 +389,27 @@ public class xcinfoCore {
                     .map { _ in url }
                     .eraseToAnyPublisher()
             }
-            .flatMap { url -> Future<URL, XCAPIError> in
+            .flatMap { url -> AnyPublisher<URL, XCAPIError> in
                 self.logger.beginSection("Downloading")
-                return
-                    self.downloader.start(url: url, disableSleep: disableSleep)
+
+                func download(url: URL, resumeData: Data? = nil) -> AnyPublisher<URL, XCAPIError> {
+                    return self.downloader.start(url: url, disableSleep: disableSleep, resumeData: resumeData)
+                        .catch { error -> AnyPublisher<URL, XCAPIError> in
+                            guard case let XCAPIError.recoverableDownloadError(url, resumeData) = error else {
+                                return Fail(error: error).eraseToAnyPublisher()
+                            }
+
+                            return Just(())
+                                .setFailureType(to: XCAPIError.self)
+                                .delay(for: .seconds(3), scheduler: DispatchQueue.global())
+                                .flatMap {
+                                    download(url: url, resumeData: resumeData)
+                                }
+                                .eraseToAnyPublisher()
+                        }.eraseToAnyPublisher()
+                }
+
+                return download(url: url)
             }
             .flatMap { url -> Future<URL, XCAPIError> in
                 // unxip

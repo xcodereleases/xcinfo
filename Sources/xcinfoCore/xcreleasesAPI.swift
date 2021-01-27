@@ -165,6 +165,7 @@ enum XCAPIError: Error, CustomStringConvertible {
     case invalidCache
     case versionNotFound
     case downloadInterrupted
+    case recoverableDownloadError(url: URL, resumeData: Data)
     case couldNotMoveToTemporaryFile
     case couldNotMoveToApplicationsFolder
     case timeout
@@ -177,6 +178,8 @@ enum XCAPIError: Error, CustomStringConvertible {
             return "invalid cache file"
         case .versionNotFound:
             return "version not found"
+        case .recoverableDownloadError:
+            return "download failed"
         case .downloadInterrupted:
             return "download was interrupted"
         case .couldNotMoveToTemporaryFile:

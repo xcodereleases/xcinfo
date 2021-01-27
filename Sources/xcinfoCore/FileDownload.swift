@@ -30,6 +30,8 @@ class FileDownload: NSObject, URLSessionDownloadDelegate {
     public private(set) var downloadedURL: URL?
     private var startDate: Date!
 
+    public private(set) var resumeData: Data?
+
     private var totalBytesExpectedToWriteValue: Double = 0
     private var downloadSpeedValues = SpeedMeasurements()
 
@@ -108,7 +110,14 @@ class FileDownload: NSObject, URLSessionDownloadDelegate {
         notify()
     }
 
-    func urlSession(_: URLSession, task _: URLSessionTask, didCompleteWithError _: Error?) {
+    func urlSession(_: URLSession, task _: URLSessionTask, didCompleteWithError error: Error?) {
+        guard let error = error as? URLError else {
+            return
+        }
+
+        self.logger.error(error.localizedDescription)
+        resumeData = error.downloadTaskResumeData
+
         state = .failed
         notify()
     }
