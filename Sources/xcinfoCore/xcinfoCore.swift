@@ -32,6 +32,8 @@ public class xcinfoCore {
     private lazy var olymp = OlympUs(logger: logger, session: session)
     private lazy var downloader = Downloader(logger: logger, olymp: olymp, sessionDelegateProxy: sessionDelegateProxy)
 
+    private var interruptionHandler: InterruptionHandler?
+
     public init(verbose: Bool, useANSI: Bool) {
         Rainbow.enabled = useANSI
         logger = Logger(isVerbose: verbose)
@@ -409,7 +411,15 @@ public class xcinfoCore {
                         }.eraseToAnyPublisher()
                 }
 
-                return download(url: url)
+                self.setDownloadInterruptionHandler()
+
+                let resumeData = self.downloader.cacheURL(for: url).flatMap { try? Data(contentsOf: $0) }
+                return download(url: url, resumeData: resumeData).handleEvents(receiveCompletion: {
+                    self.interruptionHandler = nil
+                    if case .finished = $0 {
+                        self.downloader.removeCachedResumeData(for: url)
+                    }
+                }).eraseToAnyPublisher()
             }
             .flatMap { url -> Future<URL, XCAPIError> in
                 // unxip
@@ -436,6 +446,29 @@ public class xcinfoCore {
             .store(in: &disposeBag)
 
         RunLoop.main.run()
+    }
+
+    private func setDownloadInterruptionHandler() {
+        interruptionHandler = .init { [weak self] interrupted in
+            if interrupted {
+                exit(EXIT_FAILURE)
+            } else {
+                guard let self = self else {
+                    return
+                }
+
+                print()
+                self.logger.log("Saving downloaded data...")
+
+                self.olymp.session.getTasksWithCompletionHandler { _, _, downloads in
+                    for download in downloads {
+                        // calling this method instead of URLSessionTask's cancel() allows to caught and
+                        // extract resume data from cancellation URLError in FileDownload
+                        download.cancel(byProducingResumeData: { _ in })
+                    }
+                }
+            }
+        }
     }
 
     public func installXcode(from url: URL, skipSymlinkCreation: Bool, skipXcodeSelection: Bool, skipVerification: Bool = false) {

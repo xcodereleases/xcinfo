@@ -117,19 +117,57 @@ class Downloader {
                     case .failed:
                         self.sessionDelegateProxy.remove(proxy: download)
 
-                        if download.downloadedURL == nil {
-                            if let resumeData = download.resumeData {
-                                promise(.failure(.recoverableDownloadError(url: url, resumeData: resumeData)))
-                            } else {
-                                promise(.failure(.couldNotMoveToTemporaryFile))
-                            }
-                        } else {
+                        switch (download.downloadedURL, download.resumeData) {
+                        case let (nil, resumeData?) where download.isCancelled:
+                            self.saveResumeData(resumeData, for: url)
+                            promise(.failure(.downloadInterrupted))
+                        case let (nil, resumeData?):
+                            promise(.failure(.recoverableDownloadError(url: url, resumeData: resumeData)))
+                        case (nil, nil):
+                            promise(.failure(.couldNotMoveToTemporaryFile))
+                        case (.some, _):
                             promise(.failure(.downloadInterrupted))
                         }
                     }
                 }
                 .store(in: &self.disposeBag)
         }
+    }
+
+    public func cacheURL(for url: URL) -> URL? {
+        guard
+            let cache = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?.appendingPathComponent("xcinfo")
+        else {
+            self.logger.error("Unable to save unfinished download")
+            return nil
+        }
+
+        try? FileManager.default.createDirectory(at: cache, withIntermediateDirectories: false, attributes: nil)
+
+        let fileName = url.appendingPathExtension("resume").lastPathComponent
+        return cache.appendingPathComponent(fileName)
+    }
+
+    private func saveResumeData(_ resumeData: Data, for url: URL) {
+        guard let targetURL = cacheURL(for: url) else {
+            self.logger.error("Unable to save unfinished download")
+            return
+        }
+
+        do {
+            try resumeData.write(to: targetURL)
+        } catch {
+            self.logger.error("Unable to save unfinished download")
+            self.logger.error(error.localizedDescription)
+        }
+    }
+
+    public func removeCachedResumeData(for url: URL) {
+        guard let cacheURL = cacheURL(for: url) else {
+            return
+        }
+
+        try? FileManager.default.removeItem(at: cacheURL)
     }
 
     var assets: OlympUs.AuthenticationAssets!
