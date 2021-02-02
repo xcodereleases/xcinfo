@@ -30,6 +30,9 @@ class FileDownload: NSObject, URLSessionDownloadDelegate {
     public private(set) var downloadedURL: URL?
     private var startDate: Date!
 
+    public private(set) var resumeData: Data?
+    public private(set) var isCancelled = false
+
     private var totalBytesExpectedToWriteValue: Double = 0
     private var downloadSpeedValues = SpeedMeasurements()
 
@@ -47,7 +50,7 @@ class FileDownload: NSObject, URLSessionDownloadDelegate {
     }
 
     init(task: URLSessionDownloadTask, delegateProxy: URLSessionDelegateProxy, logger: Logger, disableSleep: Bool = false) {
-        name = task.originalRequest?.url?.absoluteString ?? "<unnnamed download>"
+        name = task.originalRequest?.url?.absoluteString ?? task.currentRequest?.url?.absoluteString ?? "<unnnamed download>"
         self.task = task
         self.logger = logger
         super.init()
@@ -108,7 +111,15 @@ class FileDownload: NSObject, URLSessionDownloadDelegate {
         notify()
     }
 
-    func urlSession(_: URLSession, task _: URLSessionTask, didCompleteWithError _: Error?) {
+    func urlSession(_: URLSession, task _: URLSessionTask, didCompleteWithError error: Error?) {
+        guard let error = error as? URLError else {
+            return
+        }
+
+        self.logger.error(error.localizedDescription)
+        resumeData = error.downloadTaskResumeData
+        isCancelled = error.code == .cancelled
+
         state = .failed
         notify()
     }

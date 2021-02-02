@@ -127,6 +127,18 @@ public class URLSessionDelegateProxy: NSObject, URLSessionDownloadDelegate {
             proxy.urlSession?(session, downloadTask: downloadTask, didResumeAtOffset: fileOffset, expectedTotalBytes: expectedTotalBytes)
         }
     }
+
+    public func urlSession(_ session: URLSession, didBecomeInvalidWithError error: Error?) {
+        proxies.forEach { proxy in
+            proxy.urlSession?(session, didBecomeInvalidWithError: error)
+        }
+    }
+
+    public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        proxies.forEach { proxy in
+            proxy.urlSession?(session, task: task, didCompleteWithError: error)
+        }
+    }
 }
 
 extension OlympUs.AuthenticationAssets: Codable {}
