@@ -79,3 +79,17 @@ $ brew install xcinfo
 - man page
 - tests
 - include default data (when github is offline)
+
+## Changelog
+
+### Version 0.6.0
+Adds:
+- resuming of aborted downloads (Thanks @chippo)
+
+### Version 0.5.1
+Fixes:
+-  version string 
+
+### Version 0.5.0
+
+Initial public release
