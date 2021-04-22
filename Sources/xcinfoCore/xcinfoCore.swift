@@ -350,15 +350,32 @@ public class xcinfoCore {
         }
     }
 
-    public func install(releaseName: String?,
-                        updateVersionList: Bool,
-                        disableSleep: Bool,
-                        skipSymlinkCreation: Bool,
-                        skipXcodeSelection: Bool) {
+    public func download(releaseName: String?,
+                         updateVersionList: Bool,
+                         disableSleep: Bool) {
+        download(releaseName: releaseName, updateVersionList: updateVersionList, disableSleep: disableSleep)
+            .sink { [unowned self] completion in
+                if case let .failure(error) = completion {
+                    logger.error("Error: \(error)")
+                    exit(EXIT_FAILURE)
+                } else {
+                    exit(EXIT_SUCCESS)
+                }
+            } receiveValue: { [unowned self] (url, _, _) in
+                logger.success("Successfully downloaded to: \(url.path)")
+            }
+            .store(in: &disposeBag)
+        
+        RunLoop.main.run()
+    }
+
+    func download(releaseName: String?,
+                  updateVersionList: Bool,
+                  disableSleep: Bool) -> AnyPublisher<(URL, [Xcode], Xcode?), XCAPIError> {
         var knownXcodes: [Xcode] = []
         var xcodeVersion: Xcode?
 
-        list(updateList: updateVersionList)
+        return list(updateList: updateVersionList)
             .flatMap { knownVersions -> Future<[Xcode], Never> in
                 knownXcodes = knownVersions
                 self.logger.beginSection("Identifying")
@@ -370,7 +387,7 @@ public class xcinfoCore {
                 var releaseName = releaseName
                 if xcodes.isEmpty {
                     selectableXcodes = knownXcodes
-                    releaseName = nil 
+                    releaseName = nil
                 }
                 xcodeVersion = self.chooseXcode(selectableXcodes, givenReleaseName: releaseName, prompt: "Please choose the version you want to install: ")
                 if let xcodeVersion = xcodeVersion, let url = xcodeVersion.links?.download?.url {
@@ -391,7 +408,7 @@ public class xcinfoCore {
                     .map { _ in url }
                     .eraseToAnyPublisher()
             }
-            .flatMap { url -> AnyPublisher<URL, XCAPIError> in
+            .flatMap { url -> AnyPublisher<(URL, [Xcode], Xcode?), XCAPIError> in
                 self.logger.beginSection("Downloading")
 
                 func download(url: URL, resumeData: Data? = nil) -> AnyPublisher<URL, XCAPIError> {
@@ -419,9 +436,22 @@ public class xcinfoCore {
                     if case .finished = $0 {
                         self.downloader.removeCachedResumeData(for: url)
                     }
-                }).eraseToAnyPublisher()
+                })
+                .map { url in
+                    (url, knownXcodes, xcodeVersion)
+                }
+                .eraseToAnyPublisher()
             }
-            .flatMap { url -> Future<URL, XCAPIError> in
+            .eraseToAnyPublisher()
+    }
+
+    public func install(releaseName: String?,
+                        updateVersionList: Bool,
+                        disableSleep: Bool,
+                        skipSymlinkCreation: Bool,
+                        skipXcodeSelection: Bool) {
+        download(releaseName: releaseName, updateVersionList: updateVersionList, disableSleep: disableSleep)
+            .flatMap { (url, knownXcodes, xcodeVersion) -> AnyPublisher<(URL, [Xcode]), XCAPIError> in
                 // unxip
                 guard
                     let appFilename = xcodeVersion?.filename,
@@ -431,13 +461,17 @@ public class xcinfoCore {
                 }
                 self.logger.beginSection("Extracting")
                 return extractor.start()
+                    .map { url in
+                        (url, knownXcodes)
+                    }
+                    .eraseToAnyPublisher()
             }
             .sink(receiveCompletion: { completion in
                 if case let .failure(error) = completion {
                     self.logger.error("\(error)")
                     exit(EXIT_FAILURE)
                 }
-            }, receiveValue: { url in
+            }, receiveValue: { (url, knownXcodes) in
                 self.installXcode(from: url,
                                   knownXcodes: knownXcodes,
                                   skipSymlinkCreation: skipSymlinkCreation,

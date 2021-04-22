@@ -13,6 +13,7 @@ struct XCInfo: ParsableCommand {
         subcommands: [
             Info.self,
             List.self,
+            Download.self,
             Install.self,
             Installed.self,
             Uninstall.self,
