@@ -27,10 +27,10 @@ struct DefaultOptions: ParsableArguments {
         name: [.customLong("verbose"), .customShort("v")],
         help: "Show more debugging information."
     )
-    var isVerbose: Bool
+    var isVerbose: Bool = false
 
-    @Flag(name: .customLong("ansi"), default: true, inversion: .prefixedNo, help: "Show output with colors.")
-    var useANSI: Bool
+    @Flag(name: .customLong("ansi"), inversion: .prefixedNo, help: "Show output with colors.")
+    var useANSI: Bool = true
 }
 
 enum XcodeVersion {

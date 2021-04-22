@@ -21,10 +21,10 @@ extension XCInfo {
         )
         var xcodeVersion: String?
 
-        @Flag(default: true, inversion: .prefixedNo,
+        @Flag(inversion: .prefixedNo,
             help: "Update the list of known Xcode versions."
         )
-        var updateList: Bool
+        var updateList: Bool = false
 
         func run() throws {
             let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)

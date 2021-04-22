@@ -22,13 +22,13 @@ extension XCInfo {
         @OptionGroup()
         var globals: DefaultOptions
 
-        @Flag(default: .last10)
-        var listOption: ListOption
+        @Flag
+        var listOption: ListOption = .last10
 
-        @Flag(default: true, inversion: .prefixedNo,
+        @Flag(inversion: .prefixedNo,
             help: "Update the list of known Xcode versions."
         )
-        var updateList: Bool
+        var updateList: Bool = true
 
         func run() throws {
             let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)

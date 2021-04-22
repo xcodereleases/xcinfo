@@ -22,30 +22,29 @@ extension XCInfo {
         )
         var xcodeVersion: XcodeVersion
 
-        @Flag(default: true, inversion: .prefixedNo,
+        @Flag(inversion: .prefixedNo,
             help: "Update the list of known Xcode versions."
         )
-        var updateList: Bool
+        var updateList: Bool = true
 
         @Flag(
             name: [.customLong("sleep")],
-            default: false,
             inversion: .prefixedNo,
             help: "Let the system sleep during execution."
         )
-        var disableSleep: Bool
+        var disableSleep: Bool = false
 
         @Flag(
             name: [.customLong("no-symlink")],
             help: "Skip creating a symbolic link to `/Applications/Xcode.app`."
         )
-        var skipSymlinkCreation: Bool
+        var skipSymlinkCreation: Bool = false
 
         @Flag(
             name: [.customLong("no-xcode-select")],
             help: "Skip selecting the new Xcode version as the current Command Line Tools."
         )
-        var skipXcodeSelection: Bool
+        var skipXcodeSelection: Bool = false
 
         func run() throws {
             let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
