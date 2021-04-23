@@ -22,7 +22,8 @@ extension XCInfo {
         )
         var xcodeVersion: XcodeVersion
 
-        @Flag(inversion: .prefixedNo,
+        @Flag(
+            inversion: .prefixedNo,
             help: "Update the list of known Xcode versions."
         )
         var updateList: Bool = true
@@ -46,13 +47,21 @@ extension XCInfo {
         )
         var skipXcodeSelection: Bool = false
 
+        @Flag(
+            name: [.customLong("xip-deletion")],
+            inversion: .prefixedEnableDisable,
+            help: "Configure whether the downloaded XIP should be deleted after extraction or not."
+        )
+        var shouldDeleteXIP: Bool = true
+
         func run() throws {
             let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
             core.install(releaseName: xcodeVersion.asString(),
                          updateVersionList: updateList,
                          disableSleep: disableSleep,
                          skipSymlinkCreation: skipSymlinkCreation,
-                         skipXcodeSelection: true)
+                         skipXcodeSelection: skipXcodeSelection,
+                         shouldDeleteXIP: shouldDeleteXIP)
         }
     }
 }

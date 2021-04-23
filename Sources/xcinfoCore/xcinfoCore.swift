@@ -449,13 +449,14 @@ public class xcinfoCore {
                         updateVersionList: Bool,
                         disableSleep: Bool,
                         skipSymlinkCreation: Bool,
-                        skipXcodeSelection: Bool) {
+                        skipXcodeSelection: Bool,
+                        shouldDeleteXIP: Bool) {
         download(releaseName: releaseName, updateVersionList: updateVersionList, disableSleep: disableSleep)
-            .flatMap { (url, knownXcodes, xcodeVersion) -> AnyPublisher<(URL, [Xcode]), XCAPIError> in
+            .flatMap { (downloadURL, knownXcodes, xcodeVersion) -> AnyPublisher<(URL, [Xcode]), XCAPIError> in
                 // unxip
                 guard
                     let appFilename = xcodeVersion?.filename,
-                    let extractor = Extractor(forReadingFromContainerAt: url, appFilename: appFilename, logger: self.logger)
+                    let extractor = Extractor(forReadingFromContainerAt: downloadURL, appFilename: appFilename, logger: self.logger)
                 else {
                     exit(EXIT_FAILURE)
                 }
@@ -464,6 +465,11 @@ public class xcinfoCore {
                     .map { url in
                         (url, knownXcodes)
                     }
+                    .handleEvents(receiveCompletion: { completion in
+                        if case .finished = completion, shouldDeleteXIP {
+                            try? FileManager.default.removeItem(at: downloadURL)
+                        }
+                    })
                     .eraseToAnyPublisher()
             }
             .sink(receiveCompletion: { completion in
