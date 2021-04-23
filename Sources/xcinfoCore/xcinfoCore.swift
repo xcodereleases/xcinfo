@@ -267,13 +267,7 @@ public class xcinfoCore {
                 self.logger.beginSection("Identifying")
                 return self.findXcodes(for: releaseName, knownVersions: knownVersions)
             }
-            .mapError { _ in XCAPIError.downloadInterrupted }
-            .sink(receiveCompletion: { completion in
-                if case let .failure(error) = completion {
-                    self.logger.error(error.description)
-                    exit(EXIT_FAILURE)
-                }
-            }, receiveValue: { xcodeVersions in
+            .sink { xcodeVersions in
                 if let xcodeVersion = self.chooseXcode(xcodeVersions, givenReleaseName: releaseName, prompt: "Please choose the exact version: ") {
                     self.logger.beginSection("Version info")
                     self.logger.log(xcodeVersion.description)
@@ -320,7 +314,7 @@ public class xcinfoCore {
                     self.logger.log("Could not find version")
                     exit(EXIT_SUCCESS)
                 }
-            })
+            }
             .store(in: &disposeBag)
         RunLoop.main.run()
     }
@@ -381,7 +375,7 @@ public class xcinfoCore {
                 self.logger.beginSection("Identifying")
                 return self.findXcodes(for: releaseName, knownVersions: knownVersions)
             }
-            .mapError { _ in XCAPIError.downloadInterrupted }
+            .setFailureType(to: XCAPIError.self)
             .flatMap { xcodes -> AnyPublisher<URL, XCAPIError> in
                 var selectableXcodes = xcodes
                 var releaseName = releaseName
@@ -393,7 +387,7 @@ public class xcinfoCore {
                 if let xcodeVersion = xcodeVersion, let url = xcodeVersion.links?.download?.url {
                     self.logger.log("Starting installation.")
                     return Just(url)
-                        .mapError { _ in XCAPIError.downloadInterrupted }
+                        .setFailureType(to: XCAPIError.self)
                         .eraseToAnyPublisher()
                 } else {
                     return Fail(error: XCAPIError.versionNotFound)
