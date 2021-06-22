@@ -1,0 +1,21 @@
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+jobs:
+  build:
+    runs-on: macOS-latest
+    steps:
+    - name: Test
+      uses: actions/checkout@v2
+    - name: Building a Universal xcinfo
+      run: make
+    - name: Installing
+      run: sudo make install
+    - name: Testing archs
+      run: lipo -archs /usr/local/bin/xcinfo
+    - name: Testing xcinfo
+      run: /usr/local/bin/xcinfo --help
