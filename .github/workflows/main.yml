@@ -18,4 +18,4 @@ jobs:
     - name: Testing archs
       run: lipo -archs /usr/local/bin/xcinfo
     - name: Testing xcinfo
-      run: /usr/local/bin/xcinfo --help
+      run: /usr/local/bin/xcinfo list --all --no-ansi
