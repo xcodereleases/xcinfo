@@ -31,7 +31,14 @@ SUBCOMMANDS:
 $ git clone https://github.com/xcodereleases/xcinfo.git
 $ cd xcinfo
 $ make
+$ sudo make install
 ```
+
+### Make
+- Build a universal (`arm64` and `x86_64`) xcinfo: `make`
+- Install xcinfo (default to `/usr/local/bin`): `sudo make install` or to other local: `sudo make install prefix=/opt/local`
+- Clean build caches: `make clean`
+- Cleanup all caches: `make cleanup`
 
 ### Mint
 ```
