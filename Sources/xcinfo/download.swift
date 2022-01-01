@@ -34,12 +34,18 @@ extension XCInfo {
         )
         var disableSleep: Bool = false
 
+        @Option(
+                help: "Number of connections to use to download."
+        )
+        var concurrent: Int = 5
+
         func run() throws {
             let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
             core.download(
                 releaseName: xcodeVersion.asString(),
                 updateVersionList: updateList,
-                disableSleep: disableSleep
+                disableSleep: disableSleep,
+                concurrent: concurrent
             )
         }
     }

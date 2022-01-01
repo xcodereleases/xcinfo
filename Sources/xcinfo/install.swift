@@ -54,11 +54,17 @@ extension XCInfo {
         )
         var shouldDeleteXIP: Bool = true
 
+        @Option(
+                help: "Number of connections to use to download."
+        )
+        var concurrent: Int = 5
+
         func run() throws {
             let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
             core.install(releaseName: xcodeVersion.asString(),
                          updateVersionList: updateList,
                          disableSleep: disableSleep,
+                         concurrent: concurrent,
                          skipSymlinkCreation: skipSymlinkCreation,
                          skipXcodeSelection: skipXcodeSelection,
                          shouldDeleteXIP: shouldDeleteXIP)

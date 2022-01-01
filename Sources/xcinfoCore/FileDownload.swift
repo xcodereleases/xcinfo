@@ -10,12 +10,29 @@ import IOKit.pwr_mgt
 import OlympUs
 import XCIFoundation
 
-class FileDownload: NSObject, URLSessionDownloadDelegate {
-    enum State {
-        case downloading
-        case finished
-        case failed
-    }
+public protocol XCFileDownloadProtocol {
+    var objectDidChange: PassthroughSubject<Void, Never> { get }
+    var progress: Double { get }
+    var downloadedURL: URL? { get }
+    var resumeData: Data? { get }
+    var isCancelled: Bool { get }
+
+    var state: State { get }
+
+    var totalBytes: Measurement<UnitInformationStorage> { get }
+
+    var remainingBytes: Measurement<UnitInformationStorage> { get }
+
+    func downloadSpeed() -> Measurement<UnitInformationStorage>
+}
+
+public enum State {
+    case downloading
+    case finished
+    case failed
+}
+
+class FileDownload: NSObject, URLSessionDownloadDelegate, XCFileDownloadProtocol {
 
     public private(set) var objectDidChange = PassthroughSubject<Void, Never>()
 
@@ -130,7 +147,7 @@ struct SpeedMeasurement {
     let date: Date
 }
 
-struct SpeedMeasurements {
+public struct SpeedMeasurements {
     private var buffer: [SpeedMeasurement]
 
     init() {
