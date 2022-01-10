@@ -82,7 +82,6 @@ $ brew install xcinfo
 
 ## TODO
 - sudo support without storing user password in memory
-- `latest` argument for install subcommand (e.g. `xcinfo install latest`)
 - man page
 - tests
 - include default data (when github is offline)
