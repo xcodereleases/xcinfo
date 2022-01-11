@@ -48,16 +48,16 @@ public class xcinfoCore {
         if updateList {
             logger.verbose("Updating list of available Xcode releases from Xcodes.com ...")
             return api.remoteList()
-                .tryCatch { error -> Future<[Xcode], XCAPIError> in
-                    self.logger.verbose("Could not update the list: \(error).")
-                    return self.api.cachedList()
-                }
-                .replaceError(with: [])
-                .eraseToAnyPublisher()
+                    .tryCatch { error -> Future<[Xcode], XCAPIError> in
+                        self.logger.verbose("Could not update the list: \(error).")
+                        return self.api.cachedList()
+                    }
+                    .replaceError(with: [])
+                    .eraseToAnyPublisher()
         } else {
             return api.cachedList()
-                .replaceError(with: [])
-                .eraseToAnyPublisher()
+                    .replaceError(with: [])
+                    .eraseToAnyPublisher()
         }
     }
 
@@ -115,7 +115,7 @@ public class xcinfoCore {
             return versionNumberHaveSamePrefix && betaVersionsAreSame || areSameVersions
         } else {
             return xcode.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true ||
-                xcode.version.build?.lowercased() == version
+                    xcode.version.build?.lowercased() == version
         }
     }
 
@@ -133,115 +133,115 @@ public class xcinfoCore {
 
     public func uninstall(_ version: String?, updateVersionList: Bool) {
         list(updateList: updateVersionList)
-            .sink { knownVersions in
-                guard !knownVersions.isEmpty else {
-                    self.logger.error("No Xcode releases found.")
-                    exit(EXIT_FAILURE)
-                }
+                .sink { knownVersions in
+                    guard !knownVersions.isEmpty else {
+                        self.logger.error("No Xcode releases found.")
+                        exit(EXIT_FAILURE)
+                    }
 
-                let xcodes: [XcodeApplication] = self.findInstalledXcodes(for: version, knownVersions: knownVersions).sorted(by: >)
+                    let xcodes: [XcodeApplication] = self.findInstalledXcodes(for: version, knownVersions: knownVersions).sorted(by: >)
 
-                if xcodes.isEmpty {
-                    self.logger.error("No matching Xcode version found.")
-                    exit(EXIT_FAILURE)
-                } else {
-                    let selected: XcodeApplication
-                    if xcodes.count > 1 {
-                        let listFormatter = ListFormatter()
-                        listFormatter.locale = Locale(identifier: "en_US")
-                        self.logger.verbose("Found: \(listFormatter.string(from: xcodes.map { $0.xcode.description })!)")
+                    if xcodes.isEmpty {
+                        self.logger.error("No matching Xcode version found.")
+                        exit(EXIT_FAILURE)
+                    } else {
+                        let selected: XcodeApplication
+                        if xcodes.count > 1 {
+                            let listFormatter = ListFormatter()
+                            listFormatter.locale = Locale(identifier: "en_US")
+                            self.logger.verbose("Found: \(listFormatter.string(from: xcodes.map { $0.xcode.description })!)")
 
-                        selected = choose("Please choose the version you want to uninstall: ", type: XcodeApplication.self) { settings in
-                            let longestXcodeNameLength = xcodes.map { $0.xcode.attributedDisplayName }.max(by: { $1.count > $0.count })!.count
-                            for xcodeApp in xcodes {
-                                let attributedName = xcodeApp.xcode.attributedDisplayName
-                                let width = longestXcodeNameLength + attributedName.count - attributedName.raw.count
-                                let choice = "\(attributedName.paddedWithSpaces(to: width)) – \(xcodeApp.url.path.cyan)"
+                            selected = choose("Please choose the version you want to uninstall: ", type: XcodeApplication.self) { settings in
+                                let longestXcodeNameLength = xcodes.map { $0.xcode.attributedDisplayName }.max(by: { $1.count > $0.count })!.count
+                                for xcodeApp in xcodes {
+                                    let attributedName = xcodeApp.xcode.attributedDisplayName
+                                    let width = longestXcodeNameLength + attributedName.count - attributedName.raw.count
+                                    let choice = "\(attributedName.paddedWithSpaces(to: width)) – \(xcodeApp.url.path.cyan)"
 
-                                settings.addChoice(choice) { xcodeApp }
+                                    settings.addChoice(choice) { xcodeApp }
+                                }
                             }
+                        } else {
+                            selected = xcodes[0]
                         }
-                    } else {
-                        selected = xcodes[0]
-                    }
 
-                    let displayName = selected.xcode.attributedDisplayName
-                    if agree("Are you sure you want to uninstall Xcode \(displayName)?") {
-                        do {
-                            self.logger.verbose("Uninstalling Xcode \(selected.xcode.description) from \(selected.url.path) ...")
-                            try FileManager.default.removeItem(at: selected.url)
-                            self.logger.success("\(selected.xcode.description) uninstalled!")
+                        let displayName = selected.xcode.attributedDisplayName
+                        if agree("Are you sure you want to uninstall Xcode \(displayName)?") {
+                            do {
+                                self.logger.verbose("Uninstalling Xcode \(selected.xcode.description) from \(selected.url.path) ...")
+                                try FileManager.default.removeItem(at: selected.url)
+                                self.logger.success("\(selected.xcode.description) uninstalled!")
+                                exit(EXIT_SUCCESS)
+                            } catch {
+                                self.logger.error("Uninstallation failed. Error: \(error.localizedDescription)")
+                                exit(EXIT_FAILURE)
+                            }
+                        } else {
+                            self.logger.log("kthxbye")
                             exit(EXIT_SUCCESS)
-                        } catch {
-                            self.logger.error("Uninstallation failed. Error: \(error.localizedDescription)")
-                            exit(EXIT_FAILURE)
                         }
-                    } else {
-                        self.logger.log("kthxbye")
-                        exit(EXIT_SUCCESS)
                     }
                 }
-            }
-            .store(in: &disposeBag)
+                .store(in: &disposeBag)
 
         RunLoop.main.run()
     }
 
     public func list(showAllVersions: Bool, showOnlyGMs: Bool, updateList: Bool) {
         list(updateList: updateList)
-            .sink(receiveCompletion: { _ in
-                self.logger.error("Invalid response")
-                exit(EXIT_FAILURE)
-            }, receiveValue: { result in
-                guard !result.isEmpty else {
-                    self.logger.error("Empty result list")
+                .sink(receiveCompletion: { _ in
+                    self.logger.error("Invalid response")
                     exit(EXIT_FAILURE)
-                }
+                }, receiveValue: { result in
+                    guard !result.isEmpty else {
+                        self.logger.error("Empty result list")
+                        exit(EXIT_FAILURE)
+                    }
 
-                let versions = showOnlyGMs ? result.filter { $0.version.isGM } : result
+                    let versions = showOnlyGMs ? result.filter { $0.version.isGM } : result
 
-                let columnWidth = versions.map { $0.description }.max(by: { $1.count > $0.count })!.count + 12
-                let installableVersions = versions.filter {
-                    guard let installableOsVersion = OperatingSystemVersion(string: $0.requires) else { return false }
-                    return $0.links?.download?.url != nil &&
-                        ProcessInfo.processInfo.isOperatingSystemAtLeast(installableOsVersion)
-                }
+                    let columnWidth = versions.map { $0.description }.max(by: { $1.count > $0.count })!.count + 12
+                    let installableVersions = versions.filter {
+                        guard let installableOsVersion = OperatingSystemVersion(string: $0.requires) else { return false }
+                        return $0.links?.download?.url != nil &&
+                                ProcessInfo.processInfo.isOperatingSystemAtLeast(installableOsVersion)
+                    }
 
-                let allVersions = Set(versions)
+                    let allVersions = Set(versions)
 
-                let listedVersions = (showAllVersions ? versions : installableVersions.filter {
-                    let components = DateComponents(year: -1)
-                    let referenceDate = Calendar.current.date(byAdding: components, to: Date())!
-                    return $0.releaseDate > referenceDate
-                }).sorted(by: >)
+                    let listedVersions = (showAllVersions ? versions : installableVersions.filter {
+                        let components = DateComponents(year: -1)
+                        let referenceDate = Calendar.current.date(byAdding: components, to: Date())!
+                        return $0.releaseDate > referenceDate
+                    }).sorted(by: >)
 
-                self.printXcodeVersionList(xcodeVersions: listedVersions.map { $0.attributedDisplayName }, columnWidth: columnWidth)
+                    self.printXcodeVersionList(xcodeVersions: listedVersions.map { $0.attributedDisplayName }, columnWidth: columnWidth)
 
-                let installedVersions = self.installedXcodes(knownVersions: versions).map { $0.xcode }
+                    let installedVersions = self.installedXcodes(knownVersions: versions).map { $0.xcode }
 
-                if !installedVersions.isEmpty {
-                    self.logger.log("\nAlready installed:")
+                    if !installedVersions.isEmpty {
+                        self.logger.log("\nAlready installed:")
 
-                    self.printXcodeVersionList(xcodeVersions: installedVersions.sorted(by: >).map { $0.attributedDisplayName }, columnWidth: columnWidth)
-                }
+                        self.printXcodeVersionList(xcodeVersions: installedVersions.sorted(by: >).map { $0.attributedDisplayName }, columnWidth: columnWidth)
+                    }
 
-                let notInstallableVersions = allVersions.subtracting(installableVersions)
-                if !notInstallableVersions.isEmpty {
-                    self.logger.log("\nNot installable:")
+                    let notInstallableVersions = allVersions.subtracting(installableVersions)
+                    if !notInstallableVersions.isEmpty {
+                        self.logger.log("\nNot installable:")
 
-                    self.printXcodeVersionList(xcodeVersions: notInstallableVersions.sorted(by: >).map { $0.description }, columnWidth: columnWidth)
-                }
+                        self.printXcodeVersionList(xcodeVersions: notInstallableVersions.sorted(by: >).map { $0.description }, columnWidth: columnWidth)
+                    }
 
-                exit(EXIT_SUCCESS)
-            })
-            .store(in: &disposeBag)
+                    exit(EXIT_SUCCESS)
+                })
+                .store(in: &disposeBag)
 
         RunLoop.main.run()
     }
 
     private func printXcodeVersionList(xcodeVersions: [String], columnWidth: Int) {
         if xcodeVersions.count > 10,
-            let windowSize = WindowSize.current {
+           let windowSize = WindowSize.current {
             let cols = Int((Double(windowSize.columns) / Double(columnWidth)).rounded(.down))
             let rows = Int((Double(xcodeVersions.count) / Double(cols)).rounded(.up))
 
@@ -263,59 +263,59 @@ public class xcinfoCore {
 
     public func info(releaseName: String?) {
         list(updateList: true)
-            .flatMap { knownVersions -> Future<[Xcode], Never> in
-                self.logger.beginSection("Identifying")
-                return self.findXcodes(for: releaseName, knownVersions: knownVersions)
-            }
-            .sink { xcodeVersions in
-                if let xcodeVersion = self.chooseXcode(xcodeVersions, givenReleaseName: releaseName, prompt: "Please choose the exact version: ") {
-                    self.logger.beginSection("Version info")
-                    self.logger.log(xcodeVersion.description)
-
-                    let dateFormatter = DateFormatter()
-                    dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-                    dateFormatter.dateStyle = .long
-
-                    let relativeDateFormatter = RelativeDateTimeFormatter()
-                    relativeDateFormatter.locale = Locale(identifier: "en_US_POSIX")
-
-                    var releaseDateString = "Release date: \(dateFormatter.string(from: xcodeVersion.releaseDate))"
-                    if let relativeDateString = relativeDateFormatter.string(for: xcodeVersion.releaseDate) {
-                        releaseDateString += " (\(relativeDateString))"
-                    }
-                    self.logger.log(releaseDateString)
-                    self.logger.log("Requires macOS \(xcodeVersion.requires)")
-
-                    self.logger.beginParagraph("SDKs")
-
-                    if let sdks = xcodeVersion.sdks?.keyed() {
-                        let longestSDKName = sdks.map { "\($0.key) SDK:" }.max(by: { $1.count > $0.count })!.count
-                        for (name, versions) in sdks {
-                            let sdkName = "\(name) SDK:"
-                            let version = versions[0]
-                            self.logger.log("\(sdkName.paddedWithSpaces(to: longestSDKName)) \(version.build ?? "")")
-                        }
-                    }
-                    self.logger.beginParagraph("Compilers")
-                    if let compilers = xcodeVersion.compilers?.keyed() {
-                        let longestName = compilers.map { "\($0.key) \($0.value[0].number ?? ""):" }.max(by: { $1.count > $0.count })!.count
-                        for (name, versions) in compilers {
-                            let version = versions[0]
-                            let compilerName = "\(name) \(version.number ?? ""):"
-                            self.logger.log("\(compilerName.paddedWithSpaces(to: longestName)) \(version.build ?? "")")
-                        }
-                    }
-
-                    self.logger.beginParagraph("Links")
-                    self.logger.log("Download:      " + xcodeVersion.links!.download!.url.absoluteString)
-                    self.logger.log("Release Notes: " + xcodeVersion.links!.notes!.url.absoluteString)
-                    exit(EXIT_SUCCESS)
-                } else {
-                    self.logger.log("Could not find version")
-                    exit(EXIT_SUCCESS)
+                .flatMap { knownVersions -> Future<[Xcode], Never> in
+                    self.logger.beginSection("Identifying")
+                    return self.findXcodes(for: releaseName, knownVersions: knownVersions)
                 }
-            }
-            .store(in: &disposeBag)
+                .sink { xcodeVersions in
+                    if let xcodeVersion = self.chooseXcode(xcodeVersions, givenReleaseName: releaseName, prompt: "Please choose the exact version: ") {
+                        self.logger.beginSection("Version info")
+                        self.logger.log(xcodeVersion.description)
+
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+                        dateFormatter.dateStyle = .long
+
+                        let relativeDateFormatter = RelativeDateTimeFormatter()
+                        relativeDateFormatter.locale = Locale(identifier: "en_US_POSIX")
+
+                        var releaseDateString = "Release date: \(dateFormatter.string(from: xcodeVersion.releaseDate))"
+                        if let relativeDateString = relativeDateFormatter.string(for: xcodeVersion.releaseDate) {
+                            releaseDateString += " (\(relativeDateString))"
+                        }
+                        self.logger.log(releaseDateString)
+                        self.logger.log("Requires macOS \(xcodeVersion.requires)")
+
+                        self.logger.beginParagraph("SDKs")
+
+                        if let sdks = xcodeVersion.sdks?.keyed() {
+                            let longestSDKName = sdks.map { "\($0.key) SDK:" }.max(by: { $1.count > $0.count })!.count
+                            for (name, versions) in sdks {
+                                let sdkName = "\(name) SDK:"
+                                let version = versions[0]
+                                self.logger.log("\(sdkName.paddedWithSpaces(to: longestSDKName)) \(version.build ?? "")")
+                            }
+                        }
+                        self.logger.beginParagraph("Compilers")
+                        if let compilers = xcodeVersion.compilers?.keyed() {
+                            let longestName = compilers.map { "\($0.key) \($0.value[0].number ?? ""):" }.max(by: { $1.count > $0.count })!.count
+                            for (name, versions) in compilers {
+                                let version = versions[0]
+                                let compilerName = "\(name) \(version.number ?? ""):"
+                                self.logger.log("\(compilerName.paddedWithSpaces(to: longestName)) \(version.build ?? "")")
+                            }
+                        }
+
+                        self.logger.beginParagraph("Links")
+                        self.logger.log("Download:      " + xcodeVersion.links!.download!.url.absoluteString)
+                        self.logger.log("Release Notes: " + xcodeVersion.links!.notes!.url.absoluteString)
+                        exit(EXIT_SUCCESS)
+                    } else {
+                        self.logger.log("Could not find version")
+                        exit(EXIT_SUCCESS)
+                    }
+                }
+                .store(in: &disposeBag)
         RunLoop.main.run()
     }
 
@@ -346,138 +346,141 @@ public class xcinfoCore {
 
     public func download(releaseName: String?,
                          updateVersionList: Bool,
-                         disableSleep: Bool) {
-        download(releaseName: releaseName, updateVersionList: updateVersionList, disableSleep: disableSleep)
-            .sink { [unowned self] completion in
-                if case let .failure(error) = completion {
-                    logger.error("Error: \(error)")
-                    exit(EXIT_FAILURE)
-                } else {
-                    exit(EXIT_SUCCESS)
+                         disableSleep: Bool,
+                         concurrent: Int) {
+        download(releaseName: releaseName, updateVersionList: updateVersionList, disableSleep: disableSleep, concurrent: concurrent)
+                .sink { [unowned self] completion in
+                    if case let .failure(error) = completion {
+                        logger.error("Error: \(error)")
+                        exit(EXIT_FAILURE)
+                    } else {
+                        exit(EXIT_SUCCESS)
+                    }
+                } receiveValue: { [unowned self] (url, _, _) in
+                    logger.success("Successfully downloaded to: \(url.path)")
                 }
-            } receiveValue: { [unowned self] (url, _, _) in
-                logger.success("Successfully downloaded to: \(url.path)")
-            }
-            .store(in: &disposeBag)
-        
+                .store(in: &disposeBag)
+
         RunLoop.main.run()
     }
 
     func download(releaseName: String?,
                   updateVersionList: Bool,
-                  disableSleep: Bool) -> AnyPublisher<(URL, [Xcode], Xcode?), XCAPIError> {
+                  disableSleep: Bool,
+                  concurrent: Int) -> AnyPublisher<(URL, [Xcode], Xcode?), XCAPIError> {
         var knownXcodes: [Xcode] = []
         var xcodeVersion: Xcode?
 
         return list(updateList: updateVersionList)
-            .flatMap { knownVersions -> Future<[Xcode], Never> in
-                knownXcodes = knownVersions
-                self.logger.beginSection("Identifying")
-                return self.findXcodes(for: releaseName, knownVersions: knownVersions)
-            }
-            .setFailureType(to: XCAPIError.self)
-            .flatMap { xcodes -> AnyPublisher<URL, XCAPIError> in
-                var selectableXcodes = xcodes
-                var releaseName = releaseName
-                if xcodes.isEmpty {
-                    selectableXcodes = knownXcodes
-                    releaseName = nil
+                .flatMap { knownVersions -> Future<[Xcode], Never> in
+                    knownXcodes = knownVersions
+                    self.logger.beginSection("Identifying")
+                    return self.findXcodes(for: releaseName, knownVersions: knownVersions)
                 }
-                xcodeVersion = self.chooseXcode(selectableXcodes, givenReleaseName: releaseName, prompt: "Please choose the version you want to install: ")
-                if let xcodeVersion = xcodeVersion, let url = xcodeVersion.links?.download?.url {
-                    self.logger.log("Starting installation.")
-                    return Just(url)
-                        .setFailureType(to: XCAPIError.self)
-                        .eraseToAnyPublisher()
-                } else {
-                    return Fail(error: XCAPIError.versionNotFound)
-                        .eraseToAnyPublisher()
-                }
-            }
-            .flatMap { url -> AnyPublisher<URL, XCAPIError> in
-                self.logger.beginSection("Sign in to Apple Developer")
-                let (username, password) = Credentials.appleIDCredentials()
-                return self.downloader.authenticate(username: username, password: password)
-                    .mapError { _ in XCAPIError.downloadInterrupted }
-                    .map { _ in url }
-                    .eraseToAnyPublisher()
-            }
-            .flatMap { url -> AnyPublisher<(URL, [Xcode], Xcode?), XCAPIError> in
-                self.logger.beginSection("Downloading")
-
-                func download(url: URL, resumeData: Data? = nil) -> AnyPublisher<URL, XCAPIError> {
-                    return self.downloader.start(url: url, disableSleep: disableSleep, resumeData: resumeData)
-                        .catch { error -> AnyPublisher<URL, XCAPIError> in
-                            guard case let XCAPIError.recoverableDownloadError(url, resumeData) = error else {
-                                return Fail(error: error).eraseToAnyPublisher()
-                            }
-
-                            return Just(())
-                                .setFailureType(to: XCAPIError.self)
-                                .delay(for: .seconds(3), scheduler: DispatchQueue.global())
-                                .flatMap {
-                                    download(url: url, resumeData: resumeData)
-                                }
-                                .eraseToAnyPublisher()
-                        }.eraseToAnyPublisher()
-                }
-
-                self.setDownloadInterruptionHandler()
-
-                let resumeData = self.downloader.cacheURL(for: url).flatMap { try? Data(contentsOf: $0) }
-                return download(url: url, resumeData: resumeData).handleEvents(receiveCompletion: {
-                    self.interruptionHandler = nil
-                    if case .finished = $0 {
-                        self.downloader.removeCachedResumeData(for: url)
+                .setFailureType(to: XCAPIError.self)
+                .flatMap { xcodes -> AnyPublisher<URL, XCAPIError> in
+                    var selectableXcodes = xcodes
+                    var releaseName = releaseName
+                    if xcodes.isEmpty {
+                        selectableXcodes = knownXcodes
+                        releaseName = nil
                     }
-                })
-                .map { url in
-                    (url, knownXcodes, xcodeVersion)
+                    xcodeVersion = self.chooseXcode(selectableXcodes, givenReleaseName: releaseName, prompt: "Please choose the version you want to install: ")
+                    if let xcodeVersion = xcodeVersion, let url = xcodeVersion.links?.download?.url {
+                        self.logger.log("Starting installation.")
+                        return Just(url)
+                                .setFailureType(to: XCAPIError.self)
+                                .eraseToAnyPublisher()
+                    } else {
+                        return Fail(error: XCAPIError.versionNotFound)
+                                .eraseToAnyPublisher()
+                    }
+                }
+                .flatMap { url -> AnyPublisher<URL, XCAPIError> in
+                    self.logger.beginSection("Sign in to Apple Developer")
+                    let (username, password) = Credentials.appleIDCredentials()
+                    return self.downloader.authenticate(username: username, password: password)
+                            .mapError { _ in XCAPIError.downloadInterrupted }
+                            .map { _ in url }
+                            .eraseToAnyPublisher()
+                }
+                .flatMap { url -> AnyPublisher<(URL, [Xcode], Xcode?), XCAPIError> in
+                    self.logger.beginSection("Downloading")
+
+                    func download(url: URL, resumeData: Data? = nil) -> AnyPublisher<URL, XCAPIError> {
+                        return self.downloader.start(url: url, disableSleep: disableSleep, concurrent: concurrent, resumeData: resumeData)
+                                .catch { error -> AnyPublisher<URL, XCAPIError> in
+                                    guard case let XCAPIError.recoverableDownloadError(url, resumeData) = error else {
+                                        return Fail(error: error).eraseToAnyPublisher()
+                                    }
+
+                                    return Just(())
+                                            .setFailureType(to: XCAPIError.self)
+                                            .delay(for: .seconds(3), scheduler: DispatchQueue.global())
+                                            .flatMap {
+                                                download(url: url, resumeData: resumeData)
+                                            }
+                                            .eraseToAnyPublisher()
+                                }.eraseToAnyPublisher()
+                    }
+
+                    self.setDownloadInterruptionHandler()
+
+                    let resumeData = self.downloader.cacheURL(for: url).flatMap { try? Data(contentsOf: $0) }
+                    return download(url: url, resumeData: resumeData).handleEvents(receiveCompletion: {
+                                self.interruptionHandler = nil
+                                if case .finished = $0 {
+                                    self.downloader.removeCachedResumeData(for: url)
+                                }
+                            })
+                            .map { url in
+                                (url, knownXcodes, xcodeVersion)
+                            }
+                            .eraseToAnyPublisher()
                 }
                 .eraseToAnyPublisher()
-            }
-            .eraseToAnyPublisher()
     }
 
     public func install(releaseName: String?,
                         updateVersionList: Bool,
                         disableSleep: Bool,
+                        concurrent: Int,
                         skipSymlinkCreation: Bool,
                         skipXcodeSelection: Bool,
                         shouldDeleteXIP: Bool) {
-        download(releaseName: releaseName, updateVersionList: updateVersionList, disableSleep: disableSleep)
-            .flatMap { (downloadURL, knownXcodes, xcodeVersion) -> AnyPublisher<(URL, [Xcode]), XCAPIError> in
-                // unxip
-                guard
-                    let appFilename = xcodeVersion?.filename,
-                    let extractor = Extractor(forReadingFromContainerAt: downloadURL, appFilename: appFilename, logger: self.logger)
-                else {
-                    exit(EXIT_FAILURE)
-                }
-                self.logger.beginSection("Extracting")
-                return extractor.start()
-                    .map { url in
-                        (url, knownXcodes)
+        download(releaseName: releaseName, updateVersionList: updateVersionList, disableSleep: disableSleep, concurrent: concurrent)
+                .flatMap { (downloadURL, knownXcodes, xcodeVersion) -> AnyPublisher<(URL, [Xcode]), XCAPIError> in
+                    // unxip
+                    guard
+                            let appFilename = xcodeVersion?.filename,
+                            let extractor = Extractor(forReadingFromContainerAt: downloadURL, appFilename: appFilename, logger: self.logger)
+                            else {
+                        exit(EXIT_FAILURE)
                     }
-                    .handleEvents(receiveCompletion: { completion in
-                        if case .finished = completion, shouldDeleteXIP {
-                            try? FileManager.default.removeItem(at: downloadURL)
-                        }
-                    })
-                    .eraseToAnyPublisher()
-            }
-            .sink(receiveCompletion: { completion in
-                if case let .failure(error) = completion {
-                    self.logger.error("\(error)")
-                    exit(EXIT_FAILURE)
+                    self.logger.beginSection("Extracting")
+                    return extractor.start()
+                            .map { url in
+                                (url, knownXcodes)
+                            }
+                            .handleEvents(receiveCompletion: { completion in
+                                if case .finished = completion, shouldDeleteXIP {
+                                    try? FileManager.default.removeItem(at: downloadURL)
+                                }
+                            })
+                            .eraseToAnyPublisher()
                 }
-            }, receiveValue: { (url, knownXcodes) in
-                self.installXcode(from: url,
-                                  knownXcodes: knownXcodes,
-                                  skipSymlinkCreation: skipSymlinkCreation,
-                                  skipXcodeSelection: skipXcodeSelection)
-            })
-            .store(in: &disposeBag)
+                .sink(receiveCompletion: { completion in
+                    if case let .failure(error) = completion {
+                        self.logger.error("\(error)")
+                        exit(EXIT_FAILURE)
+                    }
+                }, receiveValue: { (url, knownXcodes) in
+                    self.installXcode(from: url,
+                            knownXcodes: knownXcodes,
+                            skipSymlinkCreation: skipSymlinkCreation,
+                            skipXcodeSelection: skipXcodeSelection)
+                })
+                .store(in: &disposeBag)
 
         RunLoop.main.run()
     }
@@ -507,14 +510,14 @@ public class xcinfoCore {
 
     public func installXcode(from url: URL, skipSymlinkCreation: Bool, skipXcodeSelection: Bool, skipVerification: Bool = false) {
         list(updateList: true)
-            .sink { xcodes in
-                self.installXcode(from: url,
-                                  knownXcodes: xcodes,
-                                  skipSymlinkCreation: skipSymlinkCreation,
-                                  skipXcodeSelection: skipXcodeSelection,
-                                  skipVerification: skipVerification)
-        }
-        .store(in: &disposeBag)
+                .sink { xcodes in
+                    self.installXcode(from: url,
+                            knownXcodes: xcodes,
+                            skipSymlinkCreation: skipSymlinkCreation,
+                            skipXcodeSelection: skipXcodeSelection,
+                            skipVerification: skipVerification)
+                }
+                .store(in: &disposeBag)
 
         RunLoop.main.run()
     }
@@ -682,7 +685,7 @@ public class xcinfoCore {
 
         session.configuration.httpCookieStorage?.removeCookies(since: Date.distantPast)
         UserDefaults.standard.removeObject(forKey: "cookies")
-        
+
         logger.log("Removed stored cookies.")
     }
 
@@ -714,25 +717,25 @@ public class xcinfoCore {
 
     public func installedXcodes(updateList: Bool) {
         list(updateList: updateList)
-            .sink { knownVersions in
-                guard !knownVersions.isEmpty else {
-                    self.logger.error("No Xcode releases found.")
-                    exit(EXIT_FAILURE)
-                }
+                .sink { knownVersions in
+                    guard !knownVersions.isEmpty else {
+                        self.logger.error("No Xcode releases found.")
+                        exit(EXIT_FAILURE)
+                    }
 
-                let xcodes = self.installedXcodes(knownVersions: knownVersions)
-                let longestXcodeNameLength = xcodes.map { $0.xcode.description }.max(by: { $1.count > $0.count })!.count
-                xcodes.forEach {
-                    let displayVersion = $0.xcode.displayVersion
-                    let attributedDisplayName = "\(displayVersion) (\($0.xcode.version.build ?? ""))"
+                    let xcodes = self.installedXcodes(knownVersions: knownVersions)
+                    let longestXcodeNameLength = xcodes.map { $0.xcode.description }.max(by: { $1.count > $0.count })!.count
+                    xcodes.forEach {
+                        let displayVersion = $0.xcode.displayVersion
+                        let attributedDisplayName = "\(displayVersion) (\($0.xcode.version.build ?? ""))"
 
-                    let attributedName = attributedDisplayName.cyan
-                    let width = longestXcodeNameLength + attributedName.count - attributedName.raw.count
-                    self.logger.log("\(attributedName.paddedWithSpaces(to: width)) – \($0.url.path.cyan)")
-                }
+                        let attributedName = attributedDisplayName.cyan
+                        let width = longestXcodeNameLength + attributedName.count - attributedName.raw.count
+                        self.logger.log("\(attributedName.paddedWithSpaces(to: width)) – \($0.url.path.cyan)")
+                    }
 
-                exit(EXIT_SUCCESS)
-            }.store(in: &disposeBag)
+                    exit(EXIT_SUCCESS)
+                }.store(in: &disposeBag)
 
         RunLoop.main.run()
     }
@@ -748,7 +751,7 @@ public class xcinfoCore {
             let url = URL(fileURLWithPath: String(path))
             let versionURL = url.appendingPathComponent("Contents/version.plist")
             if let plistBuild = NSDictionary(contentsOfFile: versionURL.path)?["ProductBuildVersion"] as? String,
-                let release = knownVersions.first(where: { $0.version.build == plistBuild }) {
+               let release = knownVersions.first(where: { $0.version.build == plistBuild }) {
                 return XcodeApplication(url: url, xcode: release)
             } else {
                 return nil

@@ -39,7 +39,7 @@ class Downloader {
         return formatter
     }()
 
-    public func start(url: URL, disableSleep: Bool, resumeData: Data? = nil) -> Future<URL, XCAPIError> {
+    public func start(url: URL, disableSleep: Bool, concurrent: Int, resumeData: Data? = nil) -> Future<URL, XCAPIError> {
         var progressDisplay = ProgressDisplay(ratio: 0, width: 20)
 
         return Future { promise in
@@ -54,7 +54,8 @@ class Downloader {
                 task = self.olymp.session.downloadTask(with: request)
             }
 
-            let download = FileDownload(task: task,
+            let download = MultiPartsDownloadTask(from: url, in: self.olymp.session,
+                                        concurrent: concurrent,
                                         delegateProxy: self.sessionDelegateProxy,
                                         logger: self.logger,
                                         disableSleep: disableSleep)
