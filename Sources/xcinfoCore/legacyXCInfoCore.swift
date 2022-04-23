@@ -20,14 +20,14 @@ func fail(statusCode: Int, errorMessage: String? = nil) -> Never {
     exit(Int32(statusCode))
 }
 
-public class xcinfoCore {
+public class legacyXCInfoCore {
     private let logger: Logger
     private var disposeBag = Set<AnyCancellable>()
 
     private let session: URLSession
     private let sessionDelegateProxy = URLSessionDelegateProxy()
 
-    private lazy var api = xcreleasesAPI(baseURL: URL(string: "https://xcodereleases.com/data.json")!, logger: logger, session: session)
+    private lazy var api = XCReleasesAPI(baseURL: URL(string: "https://xcodereleases.com/data.json")!, session: session)
 
     private lazy var olymp = OlympUs(logger: logger, session: session)
     private lazy var downloader = Downloader(logger: logger, olymp: olymp, sessionDelegateProxy: sessionDelegateProxy)

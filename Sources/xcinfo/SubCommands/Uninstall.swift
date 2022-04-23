@@ -27,7 +27,7 @@ extension XCInfo {
         var updateList: Bool = false
 
         func run() throws {
-            let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
+            let core = legacyXCInfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
             core.uninstall(xcodeVersion?.lowercased(), updateVersionList: updateList)
         }
     }

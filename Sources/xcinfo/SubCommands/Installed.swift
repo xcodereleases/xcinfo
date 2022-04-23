@@ -7,7 +7,7 @@ import ArgumentParser
 import xcinfoCore
 
 extension XCInfo {
-    struct Installed: ParsableCommand {
+    struct Installed: AsyncParsableCommand {
         static var configuration = CommandConfiguration(
             abstract: "Show installed Xcode versions",
             discussion: "Show all installed versions of Xcode and their location on this computer."
@@ -21,9 +21,9 @@ extension XCInfo {
         )
         var updateList: Bool = true
 
-        func run() throws {
-            let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
-            core.installedXcodes(updateList: updateList)
+        func run() async throws {
+            let core = Core(environment: .live)
+            try await core.installedXcodes(shouldUpdate: updateList)
         }
     }
 }

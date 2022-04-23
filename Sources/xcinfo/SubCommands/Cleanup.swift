@@ -17,7 +17,7 @@ extension XCInfo {
         var globals: DefaultOptions
 
         func run() throws {
-            let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
+            let core = legacyXCInfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
             core.cleanup()
 
         }

@@ -35,7 +35,7 @@ extension XCInfo {
         var disableSleep: Bool = false
 
         func run() throws {
-            let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
+            let core = legacyXCInfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
             core.download(
                 releaseName: xcodeVersion.asString(),
                 updateVersionList: updateList,

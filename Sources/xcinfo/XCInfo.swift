@@ -4,22 +4,23 @@
 //
 
 import ArgumentParser
-import xcinfoCore
+import Dispatch
 
-struct XCInfo: ParsableCommand {
+@main
+struct XCInfo: AsyncParsableCommand {
     static var configuration = CommandConfiguration(
         commandName: "xcinfo",
         version: version,
         subcommands: [
-            Info.self,
+//            Info.self,
             List.self,
-            Download.self,
-            Install.self,
+//            Download.self,
+//            Install.self,
             Installed.self,
-            Uninstall.self,
-            Cleanup.self,
+//            Uninstall.self,
+//            Cleanup.self,
         ],
-        defaultSubcommand: Info.self
+        defaultSubcommand: List.self
     )
 }
 
@@ -55,5 +56,5 @@ enum XcodeVersion {
         }
     }
 }
-
-XCInfo.main()
+//
+//XCInfo.main()

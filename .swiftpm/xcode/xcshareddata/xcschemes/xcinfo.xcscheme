@@ -157,7 +157,7 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "install"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "download"
@@ -201,7 +201,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "&quot;12&quot;"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--no-symlink"
@@ -213,7 +213,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--verbose"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-h"

@@ -55,7 +55,7 @@ extension XCInfo {
         var shouldDeleteXIP: Bool = true
 
         func run() throws {
-            let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
+            let core = legacyXCInfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
             core.install(releaseName: xcodeVersion.asString(),
                          updateVersionList: updateList,
                          disableSleep: disableSleep,

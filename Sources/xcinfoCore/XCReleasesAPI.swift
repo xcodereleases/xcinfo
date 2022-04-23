@@ -107,6 +107,16 @@ extension Version {
         guard case .dp = release else { return false }
         return true
     }
+
+    var isRC: Bool {
+        guard case .rc = release else { return false }
+        return true
+    }
+
+    var isRelease: Bool {
+        guard case .release = release else { return false }
+        return true
+    }
 }
 
 extension Xcode: Comparable, Hashable {
@@ -179,7 +189,7 @@ extension KeyedVersions {
 extension SDKs: KeyedVersions {}
 extension Compilers: KeyedVersions {}
 
-enum XCAPIError: Error, CustomStringConvertible {
+public enum XCAPIError: Error, CustomStringConvertible {
     case invalidResponse
     case invalidCache
     case versionNotFound
@@ -189,7 +199,7 @@ enum XCAPIError: Error, CustomStringConvertible {
     case couldNotMoveToApplicationsFolder
     case timeout
 
-    var description: String {
+    public var description: String {
         switch self {
         case .invalidResponse:
             return "invalid response"
@@ -211,18 +221,41 @@ enum XCAPIError: Error, CustomStringConvertible {
     }
 }
 
-class xcreleasesAPI {
+public struct APIClient {
+    public var listXcodes: () async throws -> [Xcode]
+}
+
+public class XCReleasesAPI {
     public let baseURL: URL
-    private let logger: Logger
     private var disposeBag = Set<AnyCancellable>()
     private let session: URLSession
 
-    init(baseURL: URL, logger: Logger, session: URLSession) {
+    init(baseURL: URL, session: URLSession) {
         self.baseURL = baseURL
-        self.logger = logger
         self.session = session
     }
 
+    public func listXcodes() async throws -> [Xcode] {
+        let (data, urlResponse) = try await session.data(from: baseURL)
+        guard
+            let response = urlResponse as? HTTPURLResponse,
+            (200 ... 299).contains(response.statusCode) else { throw XCAPIError.invalidResponse }
+
+        let xcodes = try JSONDecoder().decode([Xcode].self, from: data)
+        return xcodes
+    }
+}
+
+extension XCReleasesAPI {
+    var apiClient: APIClient  {
+        .init(listXcodes: listXcodes)
+    }
+}
+
+// - MARK: Deprecations -
+
+extension XCReleasesAPI {
+    @available(*, deprecated, message: "Use listXcodes instead")
     public func remoteList() -> Future<[Xcode], XCAPIError> {
         Future { [unowned session] promise in
             let request = URLRequest(url: self.baseURL)
