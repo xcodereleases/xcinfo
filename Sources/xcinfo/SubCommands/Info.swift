@@ -37,8 +37,8 @@ extension XCInfo {
 //        }
 
         func run() throws {
-            let core = legacyXCInfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
-            core.info(releaseName: xcodeVersion?.asString())
+//            let core = legacyXCInfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
+//            core.info(releaseName: xcodeVersion?.asString())
         }
     }
 }

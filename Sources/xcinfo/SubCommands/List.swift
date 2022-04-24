@@ -5,6 +5,7 @@
 
 import ArgumentParser
 import xcinfoCore
+import Rainbow
 
 extension Core.ListFilter: EnumerableFlag {}
 
@@ -27,15 +28,13 @@ extension XCInfo {
         )
         var showAllVersions = false
 
-        @Flag(
-            inversion: .prefixedNo,
-            help: "Update the list of known Xcode versions."
-        )
-        var updateList = true
+        @OptionGroup
+        var listOptions: ListOptions
 
         func run() async throws {
-            let core = Core(environment: .live)
-            try await core.list(shouldUpdate: updateList, showAllVersions: showAllVersions, filter: listFilter)
+            Rainbow.enabled = globals.useANSI
+            let core = Core(environment: .live(isVerboseLoggingEnabled: globals.isVerbose))
+            try await core.list(shouldUpdate: listOptions.updateList, showAllVersions: showAllVersions, filter: listFilter)
         }
     }
 }

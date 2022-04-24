@@ -161,7 +161,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "download"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "installExtractedXcode"
@@ -200,8 +200,8 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "&quot;12&quot;"
-            isEnabled = "NO">
+            argument = "&quot;13.3.1&quot;"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--no-symlink"

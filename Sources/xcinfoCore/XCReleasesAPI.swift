@@ -3,9 +3,9 @@
 //  MIT license - see LICENSE.md
 //
 
-import Rainbow
 import Combine
 import Foundation
+import Rainbow
 import XCIFoundation
 import XCModel
 
@@ -20,11 +20,13 @@ extension XcodeApplication: Comparable {
     }
 }
 
-extension Xcode {
-    public var releaseDate: Date {
-        Calendar.current.date(from: DateComponents(year: date.year,
-                                                   month: date.month,
-                                                   day: date.day)) ?? Date(timeIntervalSinceReferenceDate: 0)
+public extension Xcode {
+    var releaseDate: Date {
+        Calendar.current.date(from: DateComponents(
+            year: date.year,
+            month: date.month,
+            day: date.day
+        )) ?? Date(timeIntervalSinceReferenceDate: 0)
     }
 }
 
@@ -141,9 +143,11 @@ extension Version: Comparable, Hashable {
         }()
 
         if lhs.isGM, rhs.isGM {
-            if numberComparision == .orderedSame,
-               let lhsBuild = lhs.build,
-               let rhsBuild = rhs.build {
+            if
+                numberComparision == .orderedSame,
+                let lhsBuild = lhs.build,
+                let rhsBuild = rhs.build
+            {
                 return lhsBuild.compare(rhsBuild, options: .numeric) == .orderedAscending
             } else {
                 return numberComparision == .orderedAscending
@@ -186,6 +190,7 @@ extension KeyedVersions {
         return dict
     }
 }
+
 extension SDKs: KeyedVersions {}
 extension Compilers: KeyedVersions {}
 
@@ -197,26 +202,29 @@ public enum XCAPIError: Error, CustomStringConvertible {
     case recoverableDownloadError(url: URL, resumeData: Data)
     case couldNotMoveToTemporaryFile
     case couldNotMoveToApplicationsFolder
+    case couldNotMoveToDestinationFolder(URL, URL, NSError)
     case timeout
 
     public var description: String {
         switch self {
         case .invalidResponse:
-            return "invalid response"
+            return "Invalid response"
         case .invalidCache:
-            return "invalid cache file"
+            return "Invalid cache file"
         case .versionNotFound:
-            return "version not found"
+            return "Version not found"
         case .recoverableDownloadError:
-            return "download failed"
+            return "Download failed"
         case .downloadInterrupted:
-            return "download was interrupted"
+            return "Download was interrupted"
         case .couldNotMoveToTemporaryFile:
-            return "could not move downloaded file into temporary directory"
+            return "Could not move downloaded file into temporary directory"
+        case let .couldNotMoveToDestinationFolder(source, destination, error):
+            return "Could not move downloaded file from \(source.standardizedFileURL.path) to \(destination.standardizedFileURL.path). \(error.localizedFailureReason ?? error.localizedDescription))"
         case .couldNotMoveToApplicationsFolder:
-            return "application could not be moved into /Applications"
+            return "Application could not be moved to /Applications"
         case .timeout:
-            return "the request timed out"
+            return "The request timed out"
         }
     }
 }
@@ -247,7 +255,7 @@ public class XCReleasesAPI {
 }
 
 extension XCReleasesAPI {
-    var apiClient: APIClient  {
+    var apiClient: APIClient {
         .init(listXcodes: listXcodes)
     }
 }

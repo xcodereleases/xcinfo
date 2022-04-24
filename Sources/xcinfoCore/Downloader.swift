@@ -3,15 +3,23 @@
 //  MIT license - see LICENSE.md
 //
 
-import Rainbow
 import Combine
 import Foundation
 import OlympUs
+import Rainbow
 import XCIFoundation
 
 enum DownloadError: Error {
     case authenticationError
     case listUpdateError
+}
+
+public struct AuthenticationProviding {
+    var authenticate: (Credentials) async throws -> Void
+}
+
+public struct DownloadProviding {
+    var download: (URL, URL, Bool) async throws -> Void
 }
 
 class Downloader {
@@ -48,16 +56,21 @@ class Downloader {
                 task = self.olymp.session.downloadTask(withResumeData: resumeData)
             } else {
                 var request = URLRequest(url: url)
-                request.addValue("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", forHTTPHeaderField: "Accept")
+                request.addValue(
+                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    forHTTPHeaderField: "Accept"
+                )
                 request.addValue("gzip, deflate, br", forHTTPHeaderField: "Accept-Encoding")
 
                 task = self.olymp.session.downloadTask(with: request)
             }
 
-            let download = FileDownload(task: task,
-                                        delegateProxy: self.sessionDelegateProxy,
-                                        logger: self.logger,
-                                        disableSleep: disableSleep)
+            let download = FileDownload(
+                task: task,
+                delegateProxy: self.sessionDelegateProxy,
+                logger: self.logger,
+                disableSleep: disableSleep
+            )
 
             if resumeData == nil {
                 self.logger.verbose("[\(Self.dateFormatter.string(from: Date()))] Starting download")
@@ -75,7 +88,10 @@ class Downloader {
                     switch download.state {
                     case .downloading:
                         if !hasLoggedTotalSize {
-                            self.logger.log("Source: \(url) (\(Self.byteCountFormatter.string(from: download.totalBytes)))\n", onSameLine: true)
+                            self.logger.log(
+                                "Source: \(url) (\(Self.byteCountFormatter.string(from: download.totalBytes)))\n",
+                                onSameLine: true
+                            )
                             hasLoggedTotalSize = true
                         }
                         if Rainbow.enabled {
@@ -136,7 +152,8 @@ class Downloader {
 
     public func cacheURL(for url: URL) -> URL? {
         guard
-            let cache = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?.appendingPathComponent("xcinfo")
+            let cache = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+                .appendingPathComponent("xcinfo")
         else {
             self.logger.error("Unable to save unfinished download")
             return nil
@@ -172,6 +189,10 @@ class Downloader {
 
     var assets: OlympUs.AuthenticationAssets!
 
+    public func authenticate(credentials: Credentials) async throws {
+        try await authenticate(username: credentials.username, password: credentials.password).singleOutput()
+    }
+
     public func authenticate(username: String, password: String) -> Future<Void, DownloadError> {
         Future { [weak self] promise in
             guard let self = self else { return }
@@ -200,7 +221,12 @@ class Downloader {
                         }
                 }
                 .flatMap { _ in
-                    self.olymp.getDownloadAuth(assets: self.assets != nil ? self.assets : self.olymp.storedAuthenticationAssets(for: username)!)
+                    self.olymp
+                        .getDownloadAuth(
+                            assets: self.assets != nil
+                                ? self.assets
+                                : self.olymp.storedAuthenticationAssets(for: username)!
+                        )
                 }
                 .sink(receiveCompletion: { _ in
                     promise(.failure(.authenticationError))
@@ -209,5 +235,50 @@ class Downloader {
                 })
                 .store(in: &self.disposeBag)
         }
+    }
+
+    public func download(url: URL, destination: URL, disableSleep: Bool) async throws {
+        _ = try await download(url: url, destination: destination, disableSleep: disableSleep).singleOutput()
+    }
+
+    public func download(
+        url: URL,
+        destination: URL,
+        disableSleep: Bool,
+        resumeData: Data? = nil
+    ) -> AnyPublisher<URL, XCAPIError> {
+        let resumeData = resumeData ?? cacheURL(for: url).flatMap { try? Data(contentsOf: $0) }
+
+        return start(url: url, disableSleep: disableSleep, resumeData: resumeData)
+            .catch { error -> AnyPublisher<URL, XCAPIError> in
+                guard case let XCAPIError.recoverableDownloadError(url, resumeData) = error else {
+                    return Fail(error: error).eraseToAnyPublisher()
+                }
+
+                let foo = Just(())
+                    .setFailureType(to: XCAPIError.self)
+                    .delay(for: .seconds(3), scheduler: DispatchQueue.global())
+                    .flatMap { [unowned self] in
+                        download(url: url, destination: destination, disableSleep: disableSleep, resumeData: resumeData)
+                    }
+                    .eraseToAnyPublisher()
+                return foo
+            }
+            .flatMap { tmpURL -> AnyPublisher<URL, XCAPIError> in
+                do {
+                    try FileManager.default.ensureFolderExists(destination)
+                    let destFile = destination.appendingPathComponent(tmpURL.lastPathComponent)
+                    if tmpURL != destFile {
+                        try FileManager.default.moveItem(at: tmpURL, to: destFile)
+                    }
+                    return Just(destination)
+                        .setFailureType(to: XCAPIError.self)
+                        .eraseToAnyPublisher()
+                } catch let error as NSError {
+                    return Fail(error: XCAPIError.couldNotMoveToDestinationFolder(tmpURL, destination, error))
+                        .eraseToAnyPublisher()
+                }
+            }
+            .eraseToAnyPublisher()
     }
 }

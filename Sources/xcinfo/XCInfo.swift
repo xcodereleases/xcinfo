@@ -4,7 +4,8 @@
 //
 
 import ArgumentParser
-import Dispatch
+import xcinfoCore
+import Foundation
 
 @main
 struct XCInfo: AsyncParsableCommand {
@@ -14,13 +15,12 @@ struct XCInfo: AsyncParsableCommand {
         subcommands: [
 //            Info.self,
             List.self,
-//            Download.self,
 //            Install.self,
+            Download.self,
             Installed.self,
 //            Uninstall.self,
 //            Cleanup.self,
-        ],
-        defaultSubcommand: List.self
+        ]
     )
 }
 
@@ -35,26 +35,39 @@ struct DefaultOptions: ParsableArguments {
     var useANSI: Bool = true
 }
 
-enum XcodeVersion {
-    case version(String)
-    case latest
+struct ListOptions: ParsableArguments {
+    @Flag(
+        inversion: .prefixedNo,
+        help: "Update the list of known Xcode versions."
+    )
+    var updateList = true
+}
 
-    init(_ string: String) throws {
-        if string == "latest" {
-            self = .latest
-        } else {
-            self = .version(string)
-        }
-    }
+struct DownloadOptions: ParsableArguments {
+    @Argument(
+        help: "A version number of an Xcode version or `latest`.",
+        transform: XcodeVersion.init
+    )
+    var xcodeVersion: XcodeVersion
 
-    func asString() -> String {
-        switch self {
-        case .latest:
-            return "latest"
-        case let .version(string):
-            return string
-        }
+    @Option(
+        name: [.long, .short],
+        help: "The download destination folder."
+    )
+    var downloadDirectory: URL = URL(fileURLWithPath: "\(NSHomeDirectory())/Downloads").standardizedFileURL
+
+    @Flag(
+        name: [.customLong("sleep")],
+        inversion: .prefixedNo,
+        help: "Let the system sleep during execution."
+    )
+    var disableSleep: Bool = false
+}
+
+}
+
+extension URL: ExpressibleByArgument {
+    public init?(argument: String) {
+        self.init(fileURLWithPath: argument)
     }
 }
-//
-//XCInfo.main()

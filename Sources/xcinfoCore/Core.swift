@@ -6,11 +6,28 @@
 import Foundation
 import Run
 import XCModel
+import Prompt
+
+public enum CoreError: Error {
+    case downloadFailed(String)
+}
 
 public class Core {
     public enum ListFilter: CaseIterable {
         case onlyGM
         case onlyReleases
+    }
+
+    public struct DownloadOptions {
+        public init(version: XcodeVersion, destination: URL, disableSleep: Bool) {
+            self.version = version
+            self.destination = destination
+            self.disableSleep = disableSleep
+        }
+
+        public var version: XcodeVersion
+        public var destination: URL
+        public var disableSleep: Bool
     }
 
     private let environment: Environment
@@ -34,7 +51,7 @@ public class Core {
 
             let attributedName = attributedDisplayName.cyan
             let width = longestXcodeNameLength + attributedName.count - attributedName.raw.count
-            environment.log("\(attributedName.paddedWithSpaces(to: width)) – \($0.url.path.cyan)")
+            environment.logger.log("\(attributedName.paddedWithSpaces(to: width)) – \($0.url.path.cyan)")
         }
     }
 
@@ -42,9 +59,102 @@ public class Core {
         let xcodes: [Xcode] = try await list(shouldUpdate: shouldUpdate)
         printXcodeList(xcodes, showAllVersions, filter)
     }
+
+    public func download(options: DownloadOptions, updateVersionList: Bool) async throws -> Void {
+        environment.logger.beginSection("Identifying")
+        let availableXcodes = try await findXcodes(for: options.version, shouldUpdate: updateVersionList)
+
+        guard let xcode = chooseXcode(version: options.version, from: availableXcodes, prompt: "Please choose the version you want to install: ") else {
+            throw CoreError.downloadFailed("No Xcode found for given version '\(options.version)'.")
+        }
+
+        guard let url = xcode.links?.download?.url else {
+            throw CoreError.downloadFailed("Invalid download url")
+        }
+
+        environment.logger.beginSection("Sign in to Apple Developer")
+        let credentials = try environment.credentialProviding.getCredentials()
+        try await environment.authenticationProviding.authenticate(credentials)
+
+        environment.logger.beginSection("Downloading")
+        do {
+            try await environment.downloadProviding.download(url, options.destination, options.disableSleep)
+        } catch let error as XCAPIError {
+            throw CoreError.downloadFailed(error.description)
+        }
+        environment.logger.log("Download to \(options.destination.path) complete.")
+    }
 }
 
 extension Core {
+    private func findXcodes(for version: XcodeVersion, shouldUpdate: Bool) async throws -> [Xcode] {
+        let knownXcodes: [Xcode] = try await list(shouldUpdate: shouldUpdate)
+
+        guard !knownXcodes.isEmpty else { return [] }
+
+        switch version {
+        case .version(let version):
+            let (fullVersion, betaVersion) = extractVersionParts(from: version)
+            return knownXcodes.filter {
+                filter(xcode: $0, fullVersion: fullVersion, betaVersion: betaVersion, version: version)
+            }
+        case .latest:
+            return [knownXcodes[0]]
+        }
+    }
+
+    private func extractVersionParts(from version: String) -> (String?, Int?) {
+        let pattern = #"(\d*.?\d*.?\d*) [b|B]eta ?(\d*)"#
+        let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive)
+        var betaVersion: Int?
+        var fullVersion: String?
+        if let match = regex?.firstMatch(in: version, options: [], range: NSRange(version.startIndex..., in: version)) {
+            if let versionRange = Range(match.range(at: 1), in: version) {
+                fullVersion = String(version[versionRange])
+            }
+            if let betaRange = Range(match.range(at: 2), in: version), let beta = Int(version[betaRange]) {
+                betaVersion = beta
+            }
+        }
+        return (fullVersion, betaVersion)
+    }
+
+    private func filter(xcode: Xcode, fullVersion: String?, betaVersion: Int?, version: String) -> Bool {
+        if let betaVersion = betaVersion {
+            let versionNumberHaveSamePrefix = xcode.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true
+            let betaVersionsAreSame: Bool = {
+                guard case let .beta(version) = xcode.version.release else { return false }
+                return version == betaVersion
+            }()
+            let areSameVersions = xcode.version.build?.lowercased() == version
+
+            return versionNumberHaveSamePrefix && betaVersionsAreSame || areSameVersions
+        } else {
+            return xcode.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true ||
+            xcode.version.build?.lowercased() == version
+        }
+    }
+
+    private func chooseXcode(version: XcodeVersion, from xcodes: [Xcode], prompt: String) -> Xcode? {
+        switch xcodes.count {
+        case 0:
+            return nil
+        case 1:
+            let version = xcodes.first
+            environment.logger.log("Found matching Xcode \(version!.attributedDisplayName).")
+            return xcodes.first
+        default:
+            environment.logger.log("Found multiple possibilities for the requested version '\(version.description.cyan)'.")
+
+            let selectedVersion = choose(prompt, type: Xcode.self) { settings in
+                xcodes.forEach { xcode in
+                    settings.addChoice(xcode.attributedDisplayName) { xcode }
+                }
+            }
+            return selectedVersion
+        }
+    }
+    
     private func list(shouldUpdate: Bool) async throws -> [Xcode] {
         let xcodes: [Xcode]
 
@@ -78,7 +188,7 @@ extension Core {
 
     private func printXcodeList(_ xcodes: [Xcode], _ showAllVersions: Bool, _ filter: ListFilter?) {
         guard !xcodes.isEmpty else {
-            environment.log("Empty result list".red)
+            environment.logger.log("Empty result list".red)
             return
         }
 
@@ -117,14 +227,14 @@ extension Core {
         let installedVersions = self.installedXcodes(knownVersions: versions).map { $0.xcode }
 
         if !installedVersions.isEmpty {
-            environment.log("\nAlready installed:")
+            environment.logger.log("\nAlready installed:")
 
             printXcodeVersionList(xcodeVersions: installedVersions.sorted(by: >).map { $0.attributedDisplayName }, columnWidth: columnWidth)
         }
 
         let notInstallableVersions = allVersions.subtracting(installableVersions)
         if !notInstallableVersions.isEmpty {
-            environment.log("\nNot installable:")
+            environment.logger.log("\nNot installable:")
 
             printXcodeVersionList(xcodeVersions: notInstallableVersions.sorted(by: >).map { $0.description }, columnWidth: columnWidth)
         }
@@ -145,10 +255,10 @@ extension Core {
                     strings.append(xcversion.paddedWithSpaces(to: width))
                 }
 
-                environment.log(strings.joined())
+                environment.logger.log(strings.joined())
             }
         } else {
-            environment.log(xcodeVersions.joined(separator: "\n"))
+            environment.logger.log(xcodeVersions.joined(separator: "\n"))
         }
     }
 }

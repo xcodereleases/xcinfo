@@ -5,6 +5,7 @@
 
 import ArgumentParser
 import xcinfoCore
+import Rainbow
 
 extension XCInfo {
     struct Installed: AsyncParsableCommand {
@@ -16,14 +17,13 @@ extension XCInfo {
         @OptionGroup()
         var globals: DefaultOptions
 
-        @Flag(inversion: .prefixedNo,
-            help: "Update the list of known Xcode versions."
-        )
-        var updateList: Bool = true
+        @OptionGroup
+        var listOptions: ListOptions
 
         func run() async throws {
-            let core = Core(environment: .live)
-            try await core.installedXcodes(shouldUpdate: updateList)
+            Rainbow.enabled = globals.useANSI
+            let core = Core(environment: .live(isVerboseLoggingEnabled: globals.isVerbose))
+            try await core.installedXcodes(shouldUpdate: listOptions.updateList)
         }
     }
 }

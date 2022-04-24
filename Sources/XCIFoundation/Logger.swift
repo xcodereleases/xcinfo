@@ -27,6 +27,10 @@ public struct Logger {
         write(message, onSameLine: onSameLine)
     }
 
+    public func emphasized(_ message: String) {
+        write(message.bold, onSameLine: false)
+    }
+
     public func verbose(_ message: String, onSameLine: Bool = false) {
         guard isVerbose else { return }
         write(message, onSameLine: onSameLine)
@@ -38,6 +42,10 @@ public struct Logger {
 
     public func error(_ message: String) {
         write(message.red, onSameLine: false)
+    }
+
+    public func warn(_ message: String) {
+        write(message.yellow, onSameLine: false)
     }
 
     private func write(_ message: String, onSameLine: Bool) {
