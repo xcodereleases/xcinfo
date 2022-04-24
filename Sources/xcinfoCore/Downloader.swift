@@ -19,7 +19,7 @@ public struct AuthenticationProviding {
 }
 
 public struct DownloadProviding {
-    var download: (URL, URL, Bool) async throws -> Void
+    var download: (URL, URL, Bool) async throws -> URL
 }
 
 class Downloader {
@@ -237,8 +237,8 @@ class Downloader {
         }
     }
 
-    public func download(url: URL, destination: URL, disableSleep: Bool) async throws {
-        _ = try await download(url: url, destination: destination, disableSleep: disableSleep).singleOutput()
+    public func download(url: URL, destination: URL, disableSleep: Bool) async throws -> URL {
+        try await download(url: url, destination: destination, disableSleep: disableSleep).singleOutput()
     }
 
     public func download(
@@ -265,17 +265,17 @@ class Downloader {
                 return foo
             }
             .flatMap { tmpURL -> AnyPublisher<URL, XCAPIError> in
+                let destFile = destination.appendingPathComponent(tmpURL.lastPathComponent)
                 do {
                     try FileManager.default.ensureFolderExists(destination)
-                    let destFile = destination.appendingPathComponent(tmpURL.lastPathComponent)
                     if tmpURL != destFile {
                         try FileManager.default.moveItem(at: tmpURL, to: destFile)
                     }
-                    return Just(destination)
+                    return Just(destFile)
                         .setFailureType(to: XCAPIError.self)
                         .eraseToAnyPublisher()
                 } catch let error as NSError {
-                    return Fail(error: XCAPIError.couldNotMoveToDestinationFolder(tmpURL, destination, error))
+                    return Fail(error: XCAPIError.couldNotMoveToDestinationFolder(tmpURL, destFile, error))
                         .eraseToAnyPublisher()
                 }
             }

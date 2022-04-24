@@ -36,15 +36,22 @@ extension Xcode: CustomStringConvertible, CustomDebugStringConvertible {
         if let number = version.number {
             components.append(number)
         }
-        if case let .gmSeed(version) = version.release {
+
+        switch version.release {
+        case .gm:
+            components.append("GM")
+        case let .gmSeed(version):
             components.append("GM Seed \(version)")
-        } else if case let .beta(version) = version.release {
+        case let .beta(version):
             components.append("Beta \(version)")
-        } else if case let .dp(version) = version.release {
+        case let .dp(version):
             components.append("DP \(version)")
-        } else if case let .rc(version) = version.release {
+        case let .rc(version):
             components.append("RC \(version)")
+        case .release:
+            break
         }
+
         return components.joined(separator: " ")
     }
 
@@ -53,16 +60,20 @@ extension Xcode: CustomStringConvertible, CustomDebugStringConvertible {
         if let number = version.number {
             components.append(number)
         }
-        if case let .gmSeed(version) = version.release {
-            components.append("gmseed_\(version)")
-        } else if case .gm = version.release {
+
+        switch version.release {
+        case .gm:
             components.append("gm")
-        } else if case let .beta(version) = version.release {
+        case let .gmSeed(version):
+            components.append("gmseed_\(version)")
+        case let .beta(version):
             components.append("beta_\(version)")
-        } else if case let .dp(version) = version.release {
+        case let .dp(version):
             components.append("dp_\(version)")
-        } else if case let .rc(version) = version.release {
+        case let .rc(version):
             components.append("rc_\(version)")
+        case .release:
+            break
         }
         return components.joined(separator: "_")
     }

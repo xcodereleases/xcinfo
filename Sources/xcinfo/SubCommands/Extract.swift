@@ -6,29 +6,29 @@
 import ArgumentParser
 import xcinfoCore
 import Rainbow
+import Foundation
 
 extension XCInfo {
-    struct Download: AsyncParsableCommand {
+    struct Extract: AsyncParsableCommand {
         static var configuration = CommandConfiguration(
-            abstract: "Downloads an Xcode version",
-            discussion: "Downloads a specific version of Xcode."
+            abstract: "Extract an Xcode XIB"
         )
 
-        @OptionGroup
-        var downloadOptions: DownloadOptions
-        
-        @OptionGroup()
-        var globals: DefaultOptions
+        @Argument
+        var source: URL
 
         @OptionGroup
-        var listOptions: ListOptions
+        var extractionOptions: ExtractionOptions
+
+        @OptionGroup()
+        var globals: DefaultOptions
 
         func run() async throws {
             Rainbow.enabled = globals.useANSI
             let environment = Environment.live(isVerboseLoggingEnabled: globals.isVerbose)
             let core = Core(environment: environment)
             do {
-                try await core.download(options: downloadOptions.options, updateVersionList: listOptions.updateList)
+                try await core.extractXIP(source: source, options: extractionOptions.options)
             } catch let error as CoreError {
                 environment.logger.error(error.localizedDescription)
                 throw ExitCode.failure
@@ -37,8 +37,8 @@ extension XCInfo {
     }
 }
 
-extension DownloadOptions {
-    var options: Core.DownloadOptions {
-        .init(version: xcodeVersion, destination: downloadDirectory, disableSleep: disableSleep)
+extension ExtractionOptions {
+    var options: Core.ExtractionOptions {
+        .init(destination: installationDirectory, useExperimentalUnxip: useExperimentalUnxip)
     }
 }

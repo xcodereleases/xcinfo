@@ -359,7 +359,7 @@ public class legacyXCInfoCore {
                 logger.success("Successfully downloaded to: \(url.path)")
             }
             .store(in: &disposeBag)
-        
+
         RunLoop.main.run()
     }
 
@@ -446,15 +446,23 @@ public class legacyXCInfoCore {
                         skipXcodeSelection: Bool,
                         shouldDeleteXIP: Bool) {
         download(releaseName: releaseName, updateVersionList: updateVersionList, disableSleep: disableSleep)
-            .flatMap { (downloadURL, knownXcodes, xcodeVersion) -> AnyPublisher<(URL, [Xcode]), XCAPIError> in
+            .mapError { error in
+                return error as Error
+            }
+            .flatMap { downloadURL, knownXcodes, xcodeVersion -> AnyPublisher<(URL, [Xcode]), Error> in
                 // unxip
                 guard
-                    let appFilename = xcodeVersion?.filename,
-                    let extractor = Extractor(forReadingFromContainerAt: downloadURL, appFilename: appFilename, logger: self.logger)
+                    let appFilename = xcodeVersion?.filename
                 else {
                     exit(EXIT_FAILURE)
                 }
                 self.logger.beginSection("Extracting")
+                let extractor = Extractor(
+                    forReadingFromContainerAt: downloadURL,
+                    destination: URL(fileURLWithPath: "/Applications"),
+                    appFilename: appFilename,
+                    logger: self.logger
+                )
                 return extractor.start()
                     .map { url in
                         (url, knownXcodes)
@@ -682,7 +690,7 @@ public class legacyXCInfoCore {
 
         session.configuration.httpCookieStorage?.removeCookies(since: Date.distantPast)
         UserDefaults.standard.removeObject(forKey: "cookies")
-        
+
         logger.log("Removed stored cookies.")
     }
 

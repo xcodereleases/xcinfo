@@ -161,6 +161,10 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "download"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "extract"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -201,6 +205,14 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "&quot;13.3.1&quot;"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/Users/trispo/Downloads/Xcode_13.3.xip"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-i /Users/trispo/Downloads"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -208,12 +220,16 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "--use-experimental-unxip"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "--version"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--verbose"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-h"
@@ -221,7 +237,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--no-ansi"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "test"

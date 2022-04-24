@@ -7,9 +7,18 @@ import Foundation
 import Run
 import XCModel
 import Prompt
+import AppKit
 
-public enum CoreError: Error {
+public enum CoreError: LocalizedError {
     case downloadFailed(String)
+    case extractionFailed(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case let .downloadFailed(description), let .extractionFailed(description):
+            return description
+        }
+    }
 }
 
 public class Core {
@@ -28,6 +37,38 @@ public class Core {
         public var version: XcodeVersion
         public var destination: URL
         public var disableSleep: Bool
+    }
+
+    public struct ExtractionOptions {
+        public init(destination: URL, useExperimentalUnxip: Bool = false) {
+            self.destination = destination
+            self.useExperimentalUnxip = useExperimentalUnxip
+        }
+
+        public var destination: URL
+        public var useExperimentalUnxip: Bool
+    }
+
+    public struct InstallationOptions {
+        public init(
+            downloadOptions: Core.DownloadOptions,
+            extractionOptions: Core.ExtractionOptions,
+            skipSymlinkCreation: Bool = false,
+            skipXcodeSelection: Bool = false,
+            shouldDeleteXIP: Bool = true
+        ) {
+            self.downloadOptions = downloadOptions
+            self.extractionOptions = extractionOptions
+            self.skipSymlinkCreation = skipSymlinkCreation
+            self.skipXcodeSelection = skipXcodeSelection
+            self.shouldDeleteXIP = shouldDeleteXIP
+        }
+
+        public var downloadOptions: DownloadOptions
+        public var extractionOptions: ExtractionOptions
+        public var skipSymlinkCreation = false
+        public var skipXcodeSelection = false
+        public var shouldDeleteXIP = true
     }
 
     private let environment: Environment
@@ -60,7 +101,8 @@ public class Core {
         printXcodeList(xcodes, showAllVersions, filter)
     }
 
-    public func download(options: DownloadOptions, updateVersionList: Bool) async throws -> Void {
+    @discardableResult
+    public func download(options: DownloadOptions, updateVersionList: Bool) async throws -> (Xcode, URL) {
         environment.logger.beginSection("Identifying")
         let availableXcodes = try await findXcodes(for: options.version, shouldUpdate: updateVersionList)
 
@@ -78,11 +120,47 @@ public class Core {
 
         environment.logger.beginSection("Downloading")
         do {
-            try await environment.downloadProviding.download(url, options.destination, options.disableSleep)
+            let downloadURL = try await environment.downloadProviding.download(url, options.destination, options.disableSleep)
+            environment.logger.log("Download to \(options.destination.path) complete.")
+            return (xcode, downloadURL)
         } catch let error as XCAPIError {
             throw CoreError.downloadFailed(error.description)
         }
-        environment.logger.log("Download to \(options.destination.path) complete.")
+    }
+
+    public func install(options: InstallationOptions, updateVersionList: Bool) async throws {
+        let (xcode, url) = try await download(options: options.downloadOptions, updateVersionList: updateVersionList)
+
+        try await extractXIP(source: url, options: options.extractionOptions, xcode: xcode)
+    }
+
+    public func extractXIP(source: URL, options: ExtractionOptions, xcode: Xcode? = nil) async throws {
+        environment.logger.beginSection("Extracting")
+        let start = Date()
+        defer {
+            let end = Date()
+            environment.logger.verbose("Extraction time: \(Int((end.timeIntervalSinceReferenceDate - start.timeIntervalSinceReferenceDate).rounded(.up))) seconds.")
+        }
+
+        let extractor = Extractor(
+            forReadingFromContainerAt: source,
+            destination: options.destination,
+            appFilename: xcode?.filename,
+            logger: environment.logger
+        )
+        do {
+            let destinationURL: URL
+            if options.useExperimentalUnxip {
+                destinationURL = try await extractor.extractExperimental()
+            } else {
+                destinationURL = try await extractor.extract()
+            }
+            environment.logger.log("XIP successfully extracted to \(destinationURL.path)")
+        } catch let error as Extractor.ExtractionError {
+            throw CoreError.extractionFailed("Could not extract archive. \(error.underlyingError.localizedDescription)")
+        } catch {
+            throw CoreError.extractionFailed("Could not extract archive. \(error)")
+        }
     }
 }
 
@@ -154,7 +232,7 @@ extension Core {
             return selectedVersion
         }
     }
-    
+
     private func list(shouldUpdate: Bool) async throws -> [Xcode] {
         let xcodes: [Xcode]
 

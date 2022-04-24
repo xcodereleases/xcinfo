@@ -14,10 +14,11 @@ struct XCInfo: AsyncParsableCommand {
         version: version,
         subcommands: [
 //            Info.self,
+            Install.self,
             List.self,
-//            Install.self,
             Download.self,
             Installed.self,
+            Extract.self,
 //            Uninstall.self,
 //            Cleanup.self,
         ]
@@ -64,10 +65,56 @@ struct DownloadOptions: ParsableArguments {
     var disableSleep: Bool = false
 }
 
+struct ExtractionOptions: ParsableArguments {
+    @Option(
+        name: [.long, .short],
+        help: "The directory to install the code version in."
+    )
+    var installationDirectory: URL = URL(fileURLWithPath: "/Applications")
+
+    @Flag(
+        help: "Uses experimental (way faster) version of unxip."
+    )
+    var useExperimentalUnxip: Bool = false
+}
+
+struct InstallationOptions: ParsableArguments {
+    @OptionGroup
+    var downloadOptions: DownloadOptions
+
+    @OptionGroup
+    var extractionOptions: ExtractionOptions
+
+    @Flag(
+        name: [.customLong("no-symlink")],
+        help: "Skip creating a symbolic link to `/Applications/Xcode.app`."
+    )
+    var skipSymlinkCreation: Bool = false
+
+    @Flag(
+        name: [.customLong("no-xcode-select")],
+        help: "Skip selecting the new Xcode version as the current Command Line Tools."
+    )
+    var skipXcodeSelection: Bool = false
+
+    @Flag(
+        name: [.customLong("xip-deletion")],
+        inversion: .prefixedEnableDisable,
+        help: "Configure whether the downloaded XIP should be deleted after extraction or not."
+    )
+    var shouldDeleteXIP: Bool = true
 }
 
 extension URL: ExpressibleByArgument {
     public init?(argument: String) {
         self.init(fileURLWithPath: argument)
+    }
+
+    public var defaultValueDescription: String {
+        path
+    }
+
+    public static var defaultCompletionKind: CompletionKind {
+        .directory
     }
 }

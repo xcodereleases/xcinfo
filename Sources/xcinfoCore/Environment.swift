@@ -62,7 +62,7 @@ extension FileManager {
     }
 
     func ensureFolderExists(_ folder: URL) throws {
-        if fileExists(atPath: folder.path) {
+        if !fileExists(atPath: folder.path) {
             try createDirectory(at: folder, withIntermediateDirectories: true)
         }
     }
