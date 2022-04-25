@@ -26,6 +26,8 @@ public enum CoreError: LocalizedError {
             return "No Xcode found for given version '\(version)'."
         case let .extractionFailed(error):
             return "Could not extract archive. \(error.localizedDescription)"
+        case let .unsupportedFile(fileExtension):
+            return "'\(fileExtension)' is not supported."
         }
     }
 }
@@ -145,6 +147,11 @@ public class Core {
 
     public func extractXIP(source: URL, options: ExtractionOptions, xcode: Xcode? = nil) async throws {
         environment.logger.beginSection("Extracting")
+
+        guard source.pathExtension == "xip" else {
+            throw CoreError.unsupportedFile(source.pathExtension)
+        }
+
         let start = Date()
         defer {
             let end = Date()
