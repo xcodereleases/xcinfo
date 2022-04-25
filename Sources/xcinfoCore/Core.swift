@@ -11,12 +11,21 @@ import AppKit
 
 public enum CoreError: LocalizedError {
     case downloadFailed(String)
-    case extractionFailed(String)
+    case versionNotFound(XcodeVersion)
+    case invalidDownloadURL
+    case extractionFailed(Error)
+    case unsupportedFile(String)
 
     public var errorDescription: String? {
         switch self {
-        case let .downloadFailed(description), let .extractionFailed(description):
+        case let .downloadFailed(description):
             return description
+        case .invalidDownloadURL:
+            return "Invalid download url"
+        case .versionNotFound(let version):
+            return "No Xcode found for given version '\(version)'."
+        case let .extractionFailed(error):
+            return "Could not extract archive. \(error.localizedDescription)"
         }
     }
 }
@@ -107,11 +116,11 @@ public class Core {
         let availableXcodes = try await findXcodes(for: options.version, shouldUpdate: updateVersionList)
 
         guard let xcode = chooseXcode(version: options.version, from: availableXcodes, prompt: "Please choose the version you want to install: ") else {
-            throw CoreError.downloadFailed("No Xcode found for given version '\(options.version)'.")
+            throw CoreError.versionNotFound(options.version)
         }
 
         guard let url = xcode.links?.download?.url else {
-            throw CoreError.downloadFailed("Invalid download url")
+            throw CoreError.invalidDownloadURL
         }
 
         environment.logger.beginSection("Sign in to Apple Developer")
@@ -157,9 +166,9 @@ public class Core {
             }
             environment.logger.log("XIP successfully extracted to \(destinationURL.path)")
         } catch let error as Extractor.ExtractionError {
-            throw CoreError.extractionFailed("Could not extract archive. \(error.underlyingError.localizedDescription)")
+            throw CoreError.extractionFailed(error.underlyingError)
         } catch {
-            throw CoreError.extractionFailed("Could not extract archive. \(error)")
+            throw CoreError.extractionFailed(error)
         }
     }
 }
