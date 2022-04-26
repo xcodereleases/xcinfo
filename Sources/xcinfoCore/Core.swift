@@ -18,10 +18,11 @@ public enum CoreError: LocalizedError {
     case gatekeeperVerificationFailed(URL)
     case codesignVerificationFailed(URL)
     case incorrectSuperUserPassword
+    case uninstallationFailed(String)
 
     public var errorDescription: String? {
         switch self {
-        case let .downloadFailed(description):
+        case let .downloadFailed(description), let .uninstallationFailed(description):
             return description
         case .invalidDownloadURL:
             return "Invalid download url"
@@ -165,6 +166,53 @@ public class Core {
 
         try await installXcode(app, options: options)
     }
+
+    public func uninstall(_ version: String?, updateVersionList: Bool) async throws {
+        let knownVersions: [Xcode] = try await list(shouldUpdate: updateVersionList)
+        guard !knownVersions.isEmpty else {
+            throw CoreError.uninstallationFailed("No Xcode releases found.")
+        }
+
+        let xcodes: [XcodeApplication] = findInstalledXcodes(for: version, knownVersions: knownVersions).sorted(by: >)
+
+        if xcodes.isEmpty {
+            throw CoreError.uninstallationFailed("No matching Xcode version found.")
+        } else {
+            let selected: XcodeApplication
+            if xcodes.count > 1 {
+                let listFormatter = ListFormatter()
+                listFormatter.locale = Locale(identifier: "en_US")
+                environment.logger.verbose("Found: \(listFormatter.string(from: xcodes.map { $0.xcode.description })!)")
+
+                selected = choose("Please choose the version you want to uninstall: ", type: XcodeApplication.self) { settings in
+                    let longestXcodeNameLength = xcodes.map { $0.xcode.attributedDisplayName }.max(by: { $1.count > $0.count })!.count
+                    for xcodeApp in xcodes {
+                        let attributedName = xcodeApp.xcode.attributedDisplayName
+                        let width = longestXcodeNameLength + attributedName.count - attributedName.raw.count
+                        let choice = "\(attributedName.paddedWithSpaces(to: width)) – \(xcodeApp.url.path.cyan)"
+
+                        settings.addChoice(choice) { xcodeApp }
+                    }
+                }
+            } else {
+                selected = xcodes[0]
+            }
+
+            let displayName = selected.xcode.attributedDisplayName
+            if agree("Are you sure you want to uninstall Xcode \(displayName)?") {
+                do {
+                    environment.logger.verbose("Uninstalling Xcode \(selected.xcode.description) from \(selected.url.path) ...")
+                    try FileManager.default.removeItem(at: selected.url)
+                    environment.logger.success("\(selected.xcode.description) uninstalled!")
+                } catch {
+                    throw CoreError.uninstallationFailed("Uninstallation failed. Error: \(error.localizedDescription)")
+                }
+            } else {
+                environment.logger.log("kthxbye")
+            }
+        }
+    }
+
 
     @discardableResult
     public func extractXIP(source: URL, options: ExtractionOptions, xcode: Xcode? = nil) async throws -> XcodeApplication? {
@@ -378,6 +426,17 @@ extension Core {
         case .latest:
             return [knownXcodes[0]]
         }
+    }
+
+    private func findInstalledXcodes(for version: String?, knownVersions: [Xcode]) -> [XcodeApplication] {
+        var xcodesApplications = installedXcodes(knownVersions: knownVersions)
+        if let version = version {
+            let (fullVersion, betaVersion) = extractVersionParts(from: version)
+            xcodesApplications = xcodesApplications.filter {
+                filter(xcode: $0.xcode, fullVersion: fullVersion, betaVersion: betaVersion, version: version)
+            }
+        }
+        return xcodesApplications
     }
 
     private func extractVersionParts(from version: String) -> (String?, Int?) {

@@ -19,7 +19,7 @@ struct XCInfo: AsyncParsableCommand {
             Download.self,
             Installed.self,
             Extract.self,
-//            Uninstall.self,
+            Uninstall.self,
 //            Cleanup.self,
         ]
     )
