@@ -43,8 +43,8 @@ class CredentialService {
         logger.log("Apple's Developer Download page requires a login.")
         logger.emphasized("Please provide your Apple Developer Program account credentials.")
 
-        let username = try Credentials.ask(prompt: "Username:")
-        let password = try Credentials.ask(prompt: "Password:", secure: true)
+        let username = try Shell.ask("Username:")
+        let password = try Shell.ask("Password:", secure: true)
 
         logger.log("\n")
         let shouldStoreInKeychain = agree("Do you want to store these credentials in the macOS Keychain?")
@@ -85,8 +85,8 @@ extension Credentials {
             print("Please provide your Apple Developer Program account credentials.".bold)
 
             do {
-                let username = try Self.ask(prompt: "Username:")
-                let password = try Self.ask(prompt: "Password:", secure: true)
+                let username = try Shell.ask("Username:")
+                let password = try Shell.ask("Password:", secure: true)
 
                 print("\n")
                 let shouldStoreInKeychain = agree("Do you want to store these credentials in the macOS Keychain?")
@@ -104,21 +104,6 @@ extension Credentials {
             } catch {
                 fail(statusCode: Int(EXIT_FAILURE), errorMessage: "Invalid credentials.")
             }
-        }
-    }
-
-    public static func ask(prompt: String, secure: Bool = false, validation: (String) -> Bool = { _ in true }) throws -> String {
-        if secure {
-            let pwd = String(cString: getpass("\(prompt) "))
-            if validation(pwd) {
-                return pwd
-            } else {
-                throw CredentialsError.invalidPassword
-            }
-        } else {
-            print("\(prompt) ", terminator: "")
-            let result = readLine() ?? ""
-            return result
         }
     }
 }

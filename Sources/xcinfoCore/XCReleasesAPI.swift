@@ -9,7 +9,12 @@ import Rainbow
 import XCIFoundation
 import XCModel
 
-struct XcodeApplication {
+public struct XcodeApplication {
+    public init(url: URL, xcode: Xcode) {
+        self.url = url
+        self.xcode = xcode
+    }
+
     public var url: URL
     public var xcode: Xcode
 }
@@ -212,7 +217,6 @@ public enum XCAPIError: Error, CustomStringConvertible {
     case downloadInterrupted
     case recoverableDownloadError(url: URL, resumeData: Data)
     case couldNotMoveToTemporaryFile
-    case couldNotMoveToApplicationsFolder
     case couldNotMoveToDestinationFolder(URL, URL, NSError)
     case timeout
 
@@ -232,8 +236,6 @@ public enum XCAPIError: Error, CustomStringConvertible {
             return "Could not move downloaded file into temporary directory"
         case let .couldNotMoveToDestinationFolder(source, destination, error):
             return "Could not move downloaded file from \(source.standardizedFileURL.path) to \(destination.standardizedFileURL.path). \(error.localizedFailureReason ?? error.localizedDescription))"
-        case .couldNotMoveToApplicationsFolder:
-            return "Application could not be moved to /Applications"
         case .timeout:
             return "The request timed out"
         }

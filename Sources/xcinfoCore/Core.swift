@@ -4,7 +4,6 @@
 //
 
 import Foundation
-import Run
 import XCModel
 import Prompt
 import AppKit
@@ -15,6 +14,10 @@ public enum CoreError: LocalizedError {
     case invalidDownloadURL
     case extractionFailed(Error)
     case unsupportedFile(String)
+    case installationFailed
+    case gatekeeperVerificationFailed(URL)
+    case codesignVerificationFailed(URL)
+    case incorrectSuperUserPassword
 
     public var errorDescription: String? {
         switch self {
@@ -25,9 +28,17 @@ public enum CoreError: LocalizedError {
         case .versionNotFound(let version):
             return "No Xcode found for given version '\(version)'."
         case let .extractionFailed(error):
-            return "Could not extract archive. \(error.localizedDescription)"
+            return error.localizedDescription
         case let .unsupportedFile(fileExtension):
             return "'\(fileExtension)' is not supported."
+        case .installationFailed:
+            return "Xcode could not be installed."
+        case let .gatekeeperVerificationFailed(url):
+            return "Gatekeeper could not verify Xcode at \(url.path)"
+        case let .codesignVerificationFailed(url):
+            return "Code sign could not verify Xcode at \(url.path)"
+        case .incorrectSuperUserPassword:
+            return ""
         }
     }
 }
@@ -142,13 +153,24 @@ public class Core {
     public func install(options: InstallationOptions, updateVersionList: Bool) async throws {
         let (xcode, url) = try await download(options: options.downloadOptions, updateVersionList: updateVersionList)
 
-        try await extractXIP(source: url, options: options.extractionOptions, xcode: xcode)
+        let app = try await extractXIP(source: url, options: options.extractionOptions, xcode: xcode)
+
+        if options.shouldDeleteXIP {
+            try deleteDownload(at: url)
+        }
+
+        guard let app = app else {
+            throw CoreError.installationFailed
+        }
+
+        try await installXcode(app, options: options)
     }
 
-    public func extractXIP(source: URL, options: ExtractionOptions, xcode: Xcode? = nil) async throws {
+    @discardableResult
+    public func extractXIP(source: URL, options: ExtractionOptions, xcode: Xcode? = nil) async throws -> XcodeApplication? {
         environment.logger.beginSection("Extracting")
 
-        guard source.pathExtension == "xip" else {
+        guard source.pathExtension.lowercased() == "xip" else {
             throw CoreError.unsupportedFile(source.pathExtension)
         }
 
@@ -172,8 +194,8 @@ public class Core {
                 destinationURL = try await extractor.extract()
             }
             environment.logger.log("XIP successfully extracted to \(destinationURL.path)")
-        } catch let error as Extractor.ExtractionError {
-            throw CoreError.extractionFailed(error.underlyingError)
+            guard let xcode = xcode else { return nil }
+            return .init(url: destinationURL, xcode: xcode)
         } catch {
             throw CoreError.extractionFailed(error)
         }
@@ -181,6 +203,167 @@ public class Core {
 }
 
 extension Core {
+    private func installXcode(_ xcode: XcodeApplication, options: InstallationOptions) async throws {
+        environment.logger.beginSection("Installing")
+
+        try verify(xcode)
+
+        let password = try getPassword()
+
+        try enableDeveloperMode(password: password)
+        try approveLicense(password: password, url: xcode.url)
+        try installComponents(password: password, url: xcode.url)
+
+        if !options.skipSymlinkCreation {
+            try await createSymbolicLink(to: xcode.url)
+        }
+
+        if !options.skipXcodeSelection {
+            try selectXcode(at: xcode.url, password: password)
+        }
+
+        environment.logger.log("Installed Xcode to \(xcode.url.path)")
+        NSWorkspace.shared.selectFile(xcode.url.path, inFileViewerRootedAtPath: xcode.url.deletingLastPathComponent().path)
+    }
+
+    private func enableDeveloperMode(password: String) throws {
+        environment.logger.log("Enabling Developer Mode...")
+
+        let result1 = Shell.executePrivileged(command: "/usr/sbin/DevToolsSecurity", password: password, args: ["-enable"]).exitStatus
+
+        guard result1 == EXIT_SUCCESS else {
+            environment.logger.log("Enabling Developer Mode \("✗".red)", onSameLine: true)
+            throw CoreError.installationFailed
+        }
+
+        let result2 = Shell.executePrivileged(command: "/usr/sbin/dseditgroup", password: password, args: "-o edit -t group -a staff _developer".components(separatedBy: " ")).exitStatus
+
+        guard result2 == EXIT_SUCCESS else {
+            environment.logger.log("Enabling Developer Mode \("✗".red)", onSameLine: true)
+            throw CoreError.installationFailed
+        }
+
+        environment.logger.log("Enabling Developer Mode \("✓".cyan)", onSameLine: true)
+    }
+
+    private func approveLicense(password: String, url: URL) throws {
+        environment.logger.log("Approving License...")
+        let result = Shell.executePrivileged(command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild", password: password, args: ["-license", "accept"]).exitStatus
+
+        guard result == EXIT_SUCCESS else {
+            environment.logger.log("Approving License \("✗".red)", onSameLine: true)
+            throw CoreError.installationFailed
+        }
+
+        environment.logger.log("Approving License \("✓".cyan)", onSameLine: true)
+    }
+
+    private func installComponents(password: String, url: URL) throws {
+        environment.logger.log("Install additional components...")
+        let result = Shell.executePrivileged(command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild", password: password, args: ["-runFirstLaunch"]).exitStatus
+
+        guard result == EXIT_SUCCESS else {
+            environment.logger.log("Install additional components \("✗".red)", onSameLine: true)
+            throw CoreError.installationFailed
+        }
+
+        environment.logger.log("Install additional components \("✓".cyan)", onSameLine: true)
+    }
+
+    private func createSymbolicLink(to destination: URL) async throws {
+        let symlinkURL = URL(fileURLWithPath: "/Applications/Xcode.app")
+        let fileManager = FileManager.default
+
+        if fileManager.isSymbolicLink(atPath: symlinkURL.path) {
+            environment.logger.verbose("Symbolic link at \(symlinkURL.path) found. Removing it...")
+            try? fileManager.removeItem(at: symlinkURL)
+        } else if fileManager.fileExists(atPath: symlinkURL.path) {
+            environment.logger.verbose("\(symlinkURL.path) already exists. Renaming it...")
+
+            let knownXcodes = try await list(shouldUpdate: false)
+            let installed = installedXcodes(knownVersions: knownXcodes)
+
+            if let xcodeApp = installed.first(where: { $0.url == symlinkURL }) {
+                environment.logger.verbose("\(symlinkURL.path) already exists. Moving it to /Applications/\(xcodeApp.xcode.filename).", onSameLine: true)
+                let destination = URL(fileURLWithPath: "/Applications/\(xcodeApp.xcode.filename)")
+                try? fileManager.moveItem(at: symlinkURL, to: destination)
+            }
+        }
+
+        environment.logger.log("Creating symbolic link at \(symlinkURL.path).")
+        try fileManager.createSymbolicLink(at: symlinkURL, withDestinationURL: destination)
+    }
+
+    func selectXcode(at url: URL, password: String) throws {
+        environment.logger.log("Selecting Xcode...")
+        let result = Shell.executePrivileged(command: "xcode-select", password: password, args: ["-s", url.path]).exitStatus
+
+        guard result == EXIT_SUCCESS else {
+            environment.logger.log("Selecting Xcode \("✗".red)", onSameLine: true)
+            throw CoreError.installationFailed
+        }
+
+        environment.logger.log("Selecting Xcode \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
+    }
+
+    private func getPassword() throws -> String {
+        environment.logger.log("XCInfo needs super user privileges in order to proceed.")
+
+        var passwordAttempts = 0
+        let maxPasswordAttempts = 3
+        var possiblePassword: String?
+        repeat {
+            passwordAttempts += 1
+            let prompt: String = {
+                if passwordAttempts == 1 {
+                    return "Please enter your password:"
+                } else {
+                    return "Sorry, try again:"
+                }
+            }()
+
+            func getPwd(prompt: String) -> String? {
+                do {
+                    let password = try Shell.ask(prompt, secure: true) { pwd in
+                        let sudoExitStatus = Shell.executePrivileged(command: "ls", password: pwd, args: []).exitStatus
+                        return sudoExitStatus == EXIT_SUCCESS
+                    }
+                    return password
+                } catch {
+                    return nil
+                }
+            }
+            possiblePassword = getPwd(prompt: prompt)
+        } while possiblePassword == nil && passwordAttempts < maxPasswordAttempts
+
+        guard let password = possiblePassword else {
+            environment.logger.verbose("3rd incorrect password attempt. Terminating...")
+            throw CoreError.incorrectSuperUserPassword
+        }
+        return password
+    }
+
+    private func verify(_ app: XcodeApplication) throws {
+        environment.logger.log("Verifying Xcode...")
+        var exitStatus = Shell.execute("/usr/sbin/spctl", args: "--assess", "--verbose", "--type", "execute", app.url.path).exitStatus
+        guard exitStatus == EXIT_SUCCESS else {
+            throw CoreError.gatekeeperVerificationFailed(app.url)
+        }
+
+        exitStatus = Shell.execute("/usr/bin/codesign", args: "--verify", "--verbose", app.url.path).exitStatus
+
+        guard exitStatus == EXIT_SUCCESS else {
+            throw CoreError.codesignVerificationFailed(app.url)
+        }
+
+        environment.logger.log("Verifying Xcode \("✓".cyan)", onSameLine: true)
+    }
+
+    private func deleteDownload(at url: URL)  throws {
+        environment.logger.log("Deleting downloaded Xcode archive...")
+        try FileManager.default.removeItem(at: url)
+    }
+
     private func findXcodes(for version: XcodeVersion, shouldUpdate: Bool) async throws -> [Xcode] {
         let knownXcodes: [Xcode] = try await list(shouldUpdate: shouldUpdate)
 
@@ -265,7 +448,7 @@ extension Core {
         guard !knownVersions.isEmpty else {
             return []
         }
-        let result = run("mdfind kMDItemCFBundleIdentifier == 'com.apple.dt.Xcode'")
+        let result = Shell.execute("mdfind", args: "kMDItemCFBundleIdentifier == 'com.apple.dt.Xcode'")
         let paths = result.stdout.split(separator: "\n")
 
         return paths.compactMap { path -> XcodeApplication? in

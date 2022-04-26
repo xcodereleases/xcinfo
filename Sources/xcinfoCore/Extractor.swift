@@ -10,8 +10,12 @@ import XCUnxip
 import Rainbow
 
 class Extractor {
-    struct ExtractionError: Error {
-        var underlyingError: Error
+    struct ExtractionError: LocalizedError {
+        var errorDescription: String?
+
+        init(_ errorDescription: String) {
+            self.errorDescription = errorDescription
+        }
     }
 
     enum State {
@@ -53,7 +57,7 @@ class Extractor {
         if let applicationURL = self.moveToDestinationFolder(tempFolder: target) {
             return applicationURL
         } else {
-            throw ExtractionError(underlyingError: XCAPIError.couldNotMoveToApplicationsFolder)
+            throw ExtractionError("Application could not be moved to \(destination.path).")
         }
     }
 
@@ -64,7 +68,7 @@ class Extractor {
             do {
                 self.container = try PKSignedContainer(forReadingFromContainerAt: self.source)
             } catch {
-                promise(.failure(ExtractionError(underlyingError: error)))
+                promise(.failure(ExtractionError(error.localizedDescription)))
             }
 
             self.state = .extracting
@@ -92,13 +96,22 @@ class Extractor {
                 }
                 self.progress = ratio
             }) { _ in
+                guard FileManager.default.fileExists(atPath: target.path) else {
+                    self.state = .failed
+                    let result = Shell.execute("/usr/bin/xip", args: "--expand", "\(self.source.path)")
+                    let prefix = "xip: error: "
+                    promise(.failure(ExtractionError(String(result.stderr.suffix(from: prefix.endIndex)))))
+                    return
+                }
+
                 self.logger.success("Done extracting: \(target.path)")
                 if let applicationURL = self.moveToDestinationFolder(tempFolder: target) {
                     self.state = .finished
                     promise(.success(applicationURL))
                 } else {
+                    self.logger.error("Extraction failed", onSameLine: true)
                     self.state = .failed
-                    promise(.failure(XCAPIError.couldNotMoveToApplicationsFolder))
+                    promise(.failure(ExtractionError("Application could not be moved to \(self.destination.path).")))
                 }
             }
         }

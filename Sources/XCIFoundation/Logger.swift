@@ -36,16 +36,16 @@ public struct Logger {
         write(message, onSameLine: onSameLine)
     }
 
-    public func success(_ message: String) {
+    public func success(_ message: String, onSameLine: Bool = false) {
         write(message.cyan, onSameLine: false)
     }
 
-    public func error(_ message: String) {
-        write(message.red, onSameLine: false)
+    public func error(_ message: String, onSameLine: Bool = false) {
+        write(message.red, onSameLine: onSameLine)
     }
 
-    public func warn(_ message: String) {
-        write(message.yellow, onSameLine: false)
+    public func warn(_ message: String, onSameLine: Bool = false) {
+        write(message.yellow, onSameLine: onSameLine)
     }
 
     private func write(_ message: String, onSameLine: Bool) {

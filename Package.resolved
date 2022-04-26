@@ -1,79 +1,68 @@
 {
-  "object": {
-    "pins": [
-      {
-        "package": "Args",
-        "repositoryURL": "https://github.com/getGuaka/Args.git",
-        "state": {
-          "branch": null,
-          "revision": "f58452117e865bf1b7c6fc29a4368e207c1f5c24",
-          "version": "0.1.1"
-        }
-      },
-      {
-        "package": "XcodeReleases",
-        "repositoryURL": "https://github.com/xcodereleases/data.git",
-        "state": {
-          "branch": "master",
-          "revision": "500ee363f568086454a881a1343713704b125855",
-          "version": null
-        }
-      },
-      {
-        "package": "Nimble",
-        "repositoryURL": "https://github.com/Quick/Nimble.git",
-        "state": {
-          "branch": null,
-          "revision": "e9d769113660769a4d9dd3afb855562c0b7ae7b0",
-          "version": "7.3.4"
-        }
-      },
-      {
-        "package": "Prompt",
-        "repositoryURL": "https://github.com/getGuaka/Prompt.git",
-        "state": {
-          "branch": null,
-          "revision": "265f929fda31c59d7dc5f1c674fd435e41dd9881",
-          "version": "0.1.1"
-        }
-      },
-      {
-        "package": "Quick",
-        "repositoryURL": "https://github.com/Quick/Quick.git",
-        "state": {
-          "branch": null,
-          "revision": "f2b5a06440ea87eba1a167cab37bf6496646c52e",
-          "version": "1.3.4"
-        }
-      },
-      {
-        "package": "Rainbow",
-        "repositoryURL": "https://github.com/onevcat/Rainbow",
-        "state": {
-          "branch": null,
-          "revision": "e0dada9cd44e3fa7ec3b867e49a8ddbf543e3df3",
-          "version": "4.0.1"
-        }
-      },
-      {
-        "package": "Run",
-        "repositoryURL": "https://github.com/getGuaka/Run.git",
-        "state": {
-          "branch": null,
-          "revision": "5a2866c0ae4266e0406d85f16adf65a30a626d7f",
-          "version": "0.1.1"
-        }
-      },
-      {
-        "package": "swift-argument-parser",
-        "repositoryURL": "https://github.com/apple/swift-argument-parser",
-        "state": {
-          "branch": null,
-          "revision": "f3c9084a71ef4376f2fabbdf1d3d90a49f1fabdb",
-          "version": "1.1.2"
-        }
+  "pins" : [
+    {
+      "identity" : "args",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/getGuaka/Args.git",
+      "state" : {
+        "revision" : "f58452117e865bf1b7c6fc29a4368e207c1f5c24",
+        "version" : "0.1.1"
       }
-    ]
-  },
-  "version": 1
+    },
+    {
+      "identity" : "data",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/xcodereleases/data.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "500ee363f568086454a881a1343713704b125855"
+      }
+    },
+    {
+      "identity" : "nimble",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Quick/Nimble.git",
+      "state" : {
+        "revision" : "e9d769113660769a4d9dd3afb855562c0b7ae7b0",
+        "version" : "7.3.4"
+      }
+    },
+    {
+      "identity" : "prompt",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/getGuaka/Prompt.git",
+      "state" : {
+        "revision" : "265f929fda31c59d7dc5f1c674fd435e41dd9881",
+        "version" : "0.1.1"
+      }
+    },
+    {
+      "identity" : "quick",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Quick/Quick.git",
+      "state" : {
+        "revision" : "f2b5a06440ea87eba1a167cab37bf6496646c52e",
+        "version" : "1.3.4"
+      }
+    },
+    {
+      "identity" : "rainbow",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/onevcat/Rainbow",
+      "state" : {
+        "revision" : "e0dada9cd44e3fa7ec3b867e49a8ddbf543e3df3",
+        "version" : "4.0.1"
+      }
+    },
+    {
+      "identity" : "swift-argument-parser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-argument-parser",
+      "state" : {
+        "revision" : "f3c9084a71ef4376f2fabbdf1d3d90a49f1fabdb",
+        "version" : "1.1.2"
+      }
+    }
+  ],
+  "version" : 2
 }

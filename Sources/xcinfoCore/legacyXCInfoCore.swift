@@ -9,7 +9,6 @@ import Combine
 import Foundation
 import OlympUs
 import Prompt
-import Run
 import XCIFoundation
 import XCModel
 
@@ -580,9 +579,9 @@ public class legacyXCInfoCore {
 
     private func getPassword(prompt: String) -> String? {
         do {
-            let password = try Credentials.ask(prompt: prompt, secure: true) { pwd in
+            let password = try Shell.ask(prompt, secure: true) { pwd in
                 logger.log("Verifying inserted password ...")
-                let sudoExitStatus = self.runSudo(command: "ls", password: pwd, args: [])
+                let sudoExitStatus = Shell.executePrivileged(command: "ls", password: pwd, args: []).exitStatus
                 logger.log("Success \(sudoExitStatus == EXIT_SUCCESS)")
                 return sudoExitStatus == EXIT_SUCCESS
             }
@@ -594,7 +593,7 @@ public class legacyXCInfoCore {
 
     @discardableResult public func selectXcode(at url: URL, password: String) -> Int {
         logger.log("Selecting Xcode...")
-        let result = runSudo(command: "xcode-select", password: password, args: ["-s", url.path])
+        let result = Shell.executePrivileged(command: "xcode-select", password: password, args: ["-s", url.path]).exitStatus
         logger.log("Selecting Xcode \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return Int(result)
     }
@@ -623,7 +622,7 @@ public class legacyXCInfoCore {
 
     @discardableResult private func verifyXcode(at url: URL) -> Int {
         logger.log("Verifying Xcode...")
-        let exitStatus = run("/usr/bin/codesign", args: ["--verify", "--verbose", url.path]).exitStatus
+        let exitStatus = Shell.execute("/usr/bin/codesign", args: "--verify", "--verbose", url.path).exitStatus
         logger.log("Verifying Xcode \(exitStatus == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return exitStatus
     }
@@ -631,14 +630,14 @@ public class legacyXCInfoCore {
     @discardableResult public func enableDeveloperMode(password: String) -> Int {
         logger.log("Enabling Developer Mode...")
 
-        let result1 = runSudo(command: "/usr/sbin/DevToolsSecurity", password: password, args: ["-enable"])
+        let result1 = Shell.executePrivileged(command: "/usr/sbin/DevToolsSecurity", password: password, args: ["-enable"]).exitStatus
 
         guard result1 == EXIT_SUCCESS else {
             logger.log("Enabling Developer Mode ✗")
             return Int(result1)
         }
 
-        let result2 = runSudo(command: "/usr/sbin/dseditgroup", password: password, args: "-o edit -t group -a staff _developer".components(separatedBy: " "))
+        let result2 = Shell.executePrivileged(command: "/usr/sbin/dseditgroup", password: password, args: "-o edit -t group -a staff _developer".components(separatedBy: " ")).exitStatus
 
         logger.log("Enabling Developer Mode \(result2 == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return Int(result2)
@@ -646,14 +645,14 @@ public class legacyXCInfoCore {
 
     @discardableResult public func approveLicense(password: String, url: URL) -> Int {
         logger.log("Approving License...")
-        let result = runSudo(command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild", password: password, args: ["-license", "accept"])
+        let result = Shell.executePrivileged(command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild", password: password, args: ["-license", "accept"]).exitStatus
         logger.log("Approving License \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return Int(result)
     }
 
     @discardableResult public func installComponents(password: String, url: URL) -> Int {
         logger.log("Install additional components...")
-        let result = runSudo(command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild", password: password, args: ["-runFirstLaunch"])
+        let result = Shell.executePrivileged(command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild", password: password, args: ["-runFirstLaunch"]).exitStatus
         logger.log("Install additional components \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return Int(result)
     }
@@ -694,32 +693,6 @@ public class legacyXCInfoCore {
         logger.log("Removed stored cookies.")
     }
 
-    func runSudo(command: String, password: String, args: [String]) -> Int32 {
-        let taskOne = Process()
-        taskOne.launchPath = "/bin/echo"
-        taskOne.arguments = [password]
-
-        let taskTwo = Process()
-        taskTwo.launchPath = "/usr/bin/sudo"
-        taskTwo.arguments = ["-S", command] + args
-
-        let pipeBetween = Pipe()
-        taskOne.standardOutput = pipeBetween
-        taskTwo.standardInput = pipeBetween
-
-        let outputPipe = Pipe()
-        taskTwo.standardOutput = outputPipe
-        taskTwo.standardError = outputPipe
-
-        taskOne.launch()
-        taskOne.waitUntilExit()
-
-        taskTwo.launch()
-        taskTwo.waitUntilExit()
-
-        return taskTwo.terminationStatus
-    }
-
     public func installedXcodes(updateList: Bool) {
         list(updateList: updateList)
             .sink { knownVersions in
@@ -749,7 +722,7 @@ public class legacyXCInfoCore {
         guard !knownVersions.isEmpty else {
             return []
         }
-        let result = run("mdfind kMDItemCFBundleIdentifier == 'com.apple.dt.Xcode'")
+        let result = Shell.execute("mdfind", args: "kMDItemCFBundleIdentifier == 'com.apple.dt.Xcode'")
         let paths = result.stdout.split(separator: "\n")
 
         return paths.compactMap { path -> XcodeApplication? in
