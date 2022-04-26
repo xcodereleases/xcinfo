@@ -366,6 +366,7 @@ extension Core {
 
         environment.logger.log("Creating symbolic link at \(symlinkURL.path).")
         try fileManager.createSymbolicLink(at: symlinkURL, withDestinationURL: destination)
+        environment.logger.log("Creating symbolic link at \(symlinkURL.path). \("✓".cyan)", onSameLine: true)
     }
 
     func selectXcode(at url: URL, password: String) throws {
@@ -377,7 +378,7 @@ extension Core {
             throw CoreError.installationFailed
         }
 
-        environment.logger.log("Selecting Xcode \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
+        environment.logger.log("Selecting Xcode \("✓".cyan)", onSameLine: true)
     }
 
     private func getPassword() throws -> String {
