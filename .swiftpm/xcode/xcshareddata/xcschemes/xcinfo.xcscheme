@@ -157,7 +157,7 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "install"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "download"
@@ -165,7 +165,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "extract"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "installExtractedXcode"
@@ -204,16 +204,20 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "&quot;13.3.1&quot;"
+            argument = "&quot;13.3&quot;"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "--preserve-xip"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/Users/trispo/Downloads/Xcode_13.3.xip"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-i /Users/trispo/Downloads"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--no-symlink"

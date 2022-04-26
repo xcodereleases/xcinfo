@@ -35,7 +35,7 @@ extension XCInfo {
                         extractionOptions: installationOptions.extractionOptions.options,
                         skipSymlinkCreation: installationOptions.skipSymlinkCreation,
                         skipXcodeSelection: installationOptions.skipXcodeSelection,
-                        shouldDeleteXIP: installationOptions.shouldDeleteXIP
+                        shouldPreserveXIP: installationOptions.shouldPreserveXIP
                     ),
                     updateVersionList: listOptions.updateList
                 )

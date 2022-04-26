@@ -86,6 +86,12 @@ struct InstallationOptions: ParsableArguments {
     var extractionOptions: ExtractionOptions
 
     @Flag(
+        name: [.customLong("preserve-xip")],
+        help: "Skip deletion of the downloaded XIP after extraction."
+    )
+    var shouldPreserveXIP: Bool = false
+
+    @Flag(
         name: [.customLong("no-symlink")],
         help: "Skip creating a symbolic link to `/Applications/Xcode.app`."
     )
@@ -96,13 +102,6 @@ struct InstallationOptions: ParsableArguments {
         help: "Skip selecting the new Xcode version as the current Command Line Tools."
     )
     var skipXcodeSelection: Bool = false
-
-    @Flag(
-        name: [.customLong("xip-deletion")],
-        inversion: .prefixedEnableDisable,
-        help: "Configure whether the downloaded XIP should be deleted after extraction or not."
-    )
-    var shouldDeleteXIP: Bool = true
 }
 
 extension URL: ExpressibleByArgument {

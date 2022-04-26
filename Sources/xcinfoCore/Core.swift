@@ -78,20 +78,20 @@ public class Core {
             extractionOptions: Core.ExtractionOptions,
             skipSymlinkCreation: Bool = false,
             skipXcodeSelection: Bool = false,
-            shouldDeleteXIP: Bool = true
+            shouldPreserveXIP: Bool = false
         ) {
             self.downloadOptions = downloadOptions
             self.extractionOptions = extractionOptions
             self.skipSymlinkCreation = skipSymlinkCreation
             self.skipXcodeSelection = skipXcodeSelection
-            self.shouldDeleteXIP = shouldDeleteXIP
+            self.shouldPreserveXIP = shouldPreserveXIP
         }
 
         public var downloadOptions: DownloadOptions
         public var extractionOptions: ExtractionOptions
         public var skipSymlinkCreation = false
         public var skipXcodeSelection = false
-        public var shouldDeleteXIP = true
+        public var shouldPreserveXIP = true
     }
 
     private let environment: Environment
@@ -156,7 +156,7 @@ public class Core {
 
         let app = try await extractXIP(source: url, options: options.extractionOptions, xcode: xcode)
 
-        if options.shouldDeleteXIP {
+        if !options.shouldPreserveXIP {
             try deleteDownload(at: url)
         }
 
