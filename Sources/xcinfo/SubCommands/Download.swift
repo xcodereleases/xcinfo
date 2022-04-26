@@ -15,6 +15,9 @@ extension XCInfo {
         )
 
         @OptionGroup
+        var versionOptions: VersionOptions
+
+        @OptionGroup
         var downloadOptions: DownloadOptions
         
         @OptionGroup()
@@ -28,7 +31,7 @@ extension XCInfo {
             let environment = Environment.live(isVerboseLoggingEnabled: globals.isVerbose)
             let core = Core(environment: environment)
             do {
-                try await core.download(options: downloadOptions.options, updateVersionList: listOptions.updateList)
+                try await core.download(version: versionOptions.xcodeVersion, options: downloadOptions.options, updateVersionList: listOptions.updateList)
             } catch let error as CoreError {
                 environment.logger.error(error.localizedDescription)
                 throw ExitCode.failure
@@ -39,6 +42,6 @@ extension XCInfo {
 
 extension DownloadOptions {
     var options: Core.DownloadOptions {
-        .init(version: xcodeVersion, destination: downloadDirectory, disableSleep: disableSleep)
+        .init(destination: downloadDirectory, disableSleep: disableSleep)
     }
 }

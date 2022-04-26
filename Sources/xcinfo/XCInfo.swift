@@ -44,16 +44,19 @@ struct ListOptions: ParsableArguments {
     var updateList = true
 }
 
-struct DownloadOptions: ParsableArguments {
+struct VersionOptions: ParsableArguments {
     @Argument(
         help: "A version number of an Xcode version or `latest`.",
         transform: XcodeVersion.init
     )
     var xcodeVersion: XcodeVersion
+}
 
+struct DownloadOptions: ParsableArguments {
     @Option(
         name: [.long, .short],
-        help: "The download destination folder."
+        help: "The download destination folder.",
+        completion: .directory
     )
     var downloadDirectory: URL = URL(fileURLWithPath: "\(NSHomeDirectory())/Downloads").standardizedFileURL
 
@@ -68,7 +71,8 @@ struct DownloadOptions: ParsableArguments {
 struct ExtractionOptions: ParsableArguments {
     @Option(
         name: [.long, .short],
-        help: "The directory to install the code version in."
+        help: "The directory to install the code version in.",
+        completion: .directory
     )
     var installationDirectory: URL = URL(fileURLWithPath: "/Applications")
 
@@ -79,6 +83,16 @@ struct ExtractionOptions: ParsableArguments {
 }
 
 struct InstallationOptions: ParsableArguments {
+    @OptionGroup
+    var versionOptions: VersionOptions
+
+    @Option(
+        name: [.customLong("xip-path")],
+        help: "The path to an existing XIP file.",
+        completion: .file(extensions: ["xip"])
+    )
+    var xipFile: URL?
+
     @OptionGroup
     var downloadOptions: DownloadOptions
 

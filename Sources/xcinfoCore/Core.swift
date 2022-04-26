@@ -50,14 +50,20 @@ public class Core {
         case onlyReleases
     }
 
-    public struct DownloadOptions {
-        public init(version: XcodeVersion, destination: URL, disableSleep: Bool) {
+    public struct VersionOptions {
+        public init(version: XcodeVersion) {
             self.version = version
+        }
+
+        public var version: XcodeVersion
+    }
+
+    public struct DownloadOptions {
+        public init(destination: URL, disableSleep: Bool) {
             self.destination = destination
             self.disableSleep = disableSleep
         }
 
-        public var version: XcodeVersion
         public var destination: URL
         public var disableSleep: Bool
     }
@@ -74,12 +80,16 @@ public class Core {
 
     public struct InstallationOptions {
         public init(
+            version: XcodeVersion,
+            xipFile: URL?,
             downloadOptions: Core.DownloadOptions,
             extractionOptions: Core.ExtractionOptions,
             skipSymlinkCreation: Bool = false,
             skipXcodeSelection: Bool = false,
             shouldPreserveXIP: Bool = false
         ) {
+            self.version = version
+            self.xipFile = xipFile
             self.downloadOptions = downloadOptions
             self.extractionOptions = extractionOptions
             self.skipSymlinkCreation = skipSymlinkCreation
@@ -87,6 +97,8 @@ public class Core {
             self.shouldPreserveXIP = shouldPreserveXIP
         }
 
+        public var version: XcodeVersion
+        public var xipFile: URL?
         public var downloadOptions: DownloadOptions
         public var extractionOptions: ExtractionOptions
         public var skipSymlinkCreation = false
@@ -125,13 +137,8 @@ public class Core {
     }
 
     @discardableResult
-    public func download(options: DownloadOptions, updateVersionList: Bool) async throws -> (Xcode, URL) {
-        environment.logger.beginSection("Identifying")
-        let availableXcodes = try await findXcodes(for: options.version, shouldUpdate: updateVersionList)
-
-        guard let xcode = chooseXcode(version: options.version, from: availableXcodes, prompt: "Please choose the version you want to install: ") else {
-            throw CoreError.versionNotFound(options.version)
-        }
+    public func download(version: XcodeVersion, options: DownloadOptions, updateVersionList: Bool) async throws -> (Xcode, URL) {
+        let xcode = try await identifyVersion(version, updateVersionList: true)
 
         guard let url = xcode.links?.download?.url else {
             throw CoreError.invalidDownloadURL
@@ -152,12 +159,21 @@ public class Core {
     }
 
     public func install(options: InstallationOptions, updateVersionList: Bool) async throws {
-        let (xcode, url) = try await download(options: options.downloadOptions, updateVersionList: updateVersionList)
+        typealias DownloadResult = (xcode: Xcode, url: URL)
 
-        let app = try await extractXIP(source: url, options: options.extractionOptions, xcode: xcode)
+        let downloadResult: DownloadResult
+
+        if let url = options.xipFile {
+            let xcode = try await identifyVersion(options.version, updateVersionList: true)
+            downloadResult = (xcode, url)
+        } else {
+            downloadResult = try await download(version: options.version, options: options.downloadOptions, updateVersionList: updateVersionList)
+        }
+
+        let app = try await extractXIP(source: downloadResult.url, options: options.extractionOptions, xcode: downloadResult.xcode)
 
         if !options.shouldPreserveXIP {
-            try deleteDownload(at: url)
+            try deleteDownload(at: downloadResult.url)
         }
 
         guard let app = app else {
@@ -251,6 +267,16 @@ public class Core {
 }
 
 extension Core {
+    private func identifyVersion(_ version: XcodeVersion, updateVersionList: Bool) async throws -> Xcode {
+        environment.logger.beginSection("Identifying")
+        let availableXcodes = try await findXcodes(for: version, shouldUpdate: updateVersionList)
+
+        guard let xcode = chooseXcode(version: version, from: availableXcodes, prompt: "Please choose the version you want to install: ") else {
+            throw CoreError.versionNotFound(version)
+        }
+        return xcode
+    }
+
     private func installXcode(_ xcode: XcodeApplication, options: InstallationOptions) async throws {
         environment.logger.beginSection("Installing")
 

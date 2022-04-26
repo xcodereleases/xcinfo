@@ -31,6 +31,8 @@ extension XCInfo {
             do {
                 try await core.install(
                     options: .init(
+                        version: installationOptions.versionOptions.xcodeVersion,
+                        xipFile: installationOptions.xipFile,
                         downloadOptions: installationOptions.downloadOptions.options,
                         extractionOptions: installationOptions.extractionOptions.options,
                         skipSymlinkCreation: installationOptions.skipSymlinkCreation,

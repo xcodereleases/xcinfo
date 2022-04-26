@@ -208,6 +208,10 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "--xip-path /Users/trispo/Downloads/Xcode_13.3.xip"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "--preserve-xip"
             isEnabled = "NO">
          </CommandLineArgument>
