@@ -49,6 +49,7 @@ class Downloader {
 
     public func start(url: URL, disableSleep: Bool, resumeData: Data? = nil) -> Future<URL, XCAPIError> {
         var progressDisplay = ProgressDisplay(ratio: 0, width: 20)
+        let start = Date()
 
         return Future { promise in
             let task: URLSessionDownloadTask
@@ -111,12 +112,15 @@ class Downloader {
                             }
                         }
                     case .finished:
+                        let downloadTime = Date().timeIntervalSinceReferenceDate - start.timeIntervalSinceReferenceDate
                         if Rainbow.enabled {
                             progressDisplay.ratio = 1
+                            let formatter = DateComponentsFormatter()
+                            formatter.unitsStyle = .abbreviated
+                            formatter.allowedUnits = [.hour, .minute, .second]
                             let logMessage = [
                                 progressDisplay.representation,
-                                "remaining: \(Self.byteCountFormatter.string(from: Measurement(value: 0, unit: .bytes)))",
-                                "speed: \(Self.byteCountFormatter.string(from: download.downloadSpeed()))/s",
+                                "Download time: \(formatter.string(from: downloadTime) ?? "???")",
                             ].joined(separator: ", ")
                             self.logger.log(logMessage, onSameLine: true)
                         } else {
