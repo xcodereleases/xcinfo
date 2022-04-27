@@ -29,6 +29,7 @@ public class legacyXCInfoCore {
     private lazy var api = XCReleasesAPI(baseURL: URL(string: "https://xcodereleases.com/data.json")!, session: session)
 
     private lazy var olymp = OlympUs(logger: logger, session: session)
+    private lazy var authenticaotr = AppleAuthenticator(olymp: olymp, logger: logger)
     private lazy var downloader = Downloader(logger: logger, olymp: olymp, sessionDelegateProxy: sessionDelegateProxy)
 
     private var interruptionHandler: InterruptionHandler?
@@ -396,7 +397,7 @@ public class legacyXCInfoCore {
             .flatMap { url -> AnyPublisher<URL, XCAPIError> in
                 self.logger.beginSection("Sign in to Apple Developer")
                 let (username, password) = Credentials.appleIDCredentials()
-                return self.downloader.authenticate(username: username, password: password)
+                return self.authenticaotr.authenticate(username: username, password: password)
                     .mapError { _ in XCAPIError.downloadInterrupted }
                     .map { _ in url }
                     .eraseToAnyPublisher()

@@ -19,6 +19,7 @@ enum CredentialsError: Error {
 
 public struct CredentialProviding {
     var getCredentials: () throws -> Credentials
+    var cleanup: () -> Void
 }
 
 class CredentialService {
@@ -60,11 +61,27 @@ class CredentialService {
 
         return .init(username: username, password: password)
     }
+
+    func cleanup() {
+            do {
+                let items = try KeychainPasswordItem.passwordItems(forService: "xcinfo.appleid")
+                if !items.isEmpty {
+                    for item in items {
+                        try item.deleteItem()
+                    }
+                    logger.success("Deleted stored Apple ID credentials from keychain.")
+                } else {
+                    logger.log("No Apple ID credentials were stored.")
+                }
+            } catch {
+                logger.error("Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcinfo.appleid'.")
+            }
+    }
 }
 
 extension CredentialService {
     var credentialProviding: CredentialProviding {
-        .init(getCredentials: appleIDCredentials)
+        .init(getCredentials: appleIDCredentials, cleanup: cleanup)
     }
 }
 

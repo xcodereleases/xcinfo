@@ -4,6 +4,7 @@
 //
 
 import ArgumentParser
+import Rainbow
 import xcinfoCore
 
 extension XCInfo {
@@ -17,9 +18,10 @@ extension XCInfo {
         var globals: DefaultOptions
 
         func run() throws {
-            let core = legacyXCInfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
+            Rainbow.enabled = globals.useANSI
+            let environment = Environment.live(isVerboseLoggingEnabled: globals.isVerbose)
+            let core = Core(environment: environment)
             core.cleanup()
-
         }
     }
 }

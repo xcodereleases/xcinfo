@@ -244,6 +244,7 @@ public enum XCAPIError: Error, CustomStringConvertible {
 
 public struct APIClient {
     public var listXcodes: () async throws -> [Xcode]
+    public var removeCookies: () -> Void
 }
 
 public class XCReleasesAPI {
@@ -265,11 +266,15 @@ public class XCReleasesAPI {
         let xcodes = try JSONDecoder().decode([Xcode].self, from: data)
         return xcodes
     }
+
+    private func removeCookies() {
+        session.configuration.httpCookieStorage?.removeCookies(since: Date.distantPast)
+    }
 }
 
 extension XCReleasesAPI {
     var apiClient: APIClient {
-        .init(listXcodes: listXcodes)
+        .init(listXcodes: listXcodes, removeCookies: removeCookies)
     }
 }
 

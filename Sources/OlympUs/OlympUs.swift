@@ -542,6 +542,27 @@ public class OlympUs {
         }
     }
 
+    public func cleanup() {
+        removeDownloadSessionInfo()
+        removeCookies()
+    }
+
+    private func removeDownloadSessionInfo() {
+        do {
+            let items = try KeychainPasswordItem.passwordItems(forService: "xcinfo.session")
+            if !items.isEmpty {
+                for item in items {
+                    try item.deleteItem()
+                }
+                logger.success("Deleted Apple developer portal session info from keychain.")
+            } else {
+                logger.log("No Apple developer portal session info was stored.")
+            }
+        } catch {
+            logger.error("Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcinfo.session'.")
+        }
+    }
+
 //    MARK: - Helpers -
 
     private func request(forURL url: URL, assets: AuthenticationAssets, method: HttpMethod = .get) -> URLRequest {
@@ -581,5 +602,9 @@ extension OlympUs {
                 }
             }
         }
+    }
+
+    private func removeCookies() {
+        UserDefaults.standard.removeObject(forKey: "cookies")
     }
 }

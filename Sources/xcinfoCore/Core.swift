@@ -9,6 +9,7 @@ import Prompt
 import AppKit
 
 public enum CoreError: LocalizedError {
+    case authenticationFailed
     case downloadFailed(String)
     case versionNotFound(XcodeVersion)
     case invalidDownloadURL
@@ -22,6 +23,8 @@ public enum CoreError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
+        case .authenticationFailed:
+            return "Authentication with Apple failed."
         case let .downloadFailed(description), let .uninstallationFailed(description):
             return description
         case .invalidDownloadURL:
@@ -146,7 +149,11 @@ public class Core {
 
         environment.logger.beginSection("Sign in to Apple Developer")
         let credentials = try environment.credentialProviding.getCredentials()
-        try await environment.authenticationProviding.authenticate(credentials)
+        do {
+            try await environment.authenticationProviding.authenticate(credentials)
+        } catch {
+            throw CoreError.authenticationFailed
+        }
 
         environment.logger.beginSection("Downloading")
         do {
@@ -263,6 +270,16 @@ public class Core {
         } catch {
             throw CoreError.extractionFailed(error)
         }
+    }
+
+    public func cleanup() {
+        environment.logger.beginSection("Cleanup")
+        environment.logger.log("")
+        environment.credentialProviding.cleanup()
+        environment.downloadProviding.cleanup()
+        environment.api.removeCookies()
+
+        environment.logger.log("Removed stored cookies.")
     }
 }
 

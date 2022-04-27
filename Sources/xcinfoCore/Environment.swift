@@ -30,14 +30,15 @@ public extension Environment {
 
         let olymp = OlympUs(logger: logger, session: session)
         let downloader = Downloader(logger: logger, olymp: olymp, sessionDelegateProxy: sessionDelegateProxy)
+        let authenticator = AppleAuthenticator(olymp: olymp, logger: logger)
 
         return .init(
             logger: logger,
             api: xcReleasesAPI.apiClient,
             cachesDirectory: FileManager.default.cachesDirectory,
             credentialProviding: credentialsService.credentialProviding,
-            authenticationProviding: .init(authenticate: downloader.authenticate),
-            downloadProviding: .init(download: downloader.download)
+            authenticationProviding: authenticator.authenticationProviding,
+            downloadProviding: downloader.downloadProviding
         )
     }
 }

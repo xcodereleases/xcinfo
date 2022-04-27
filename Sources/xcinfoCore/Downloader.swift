@@ -10,16 +10,12 @@ import Rainbow
 import XCIFoundation
 
 enum DownloadError: Error {
-    case authenticationError
     case listUpdateError
-}
-
-public struct AuthenticationProviding {
-    var authenticate: (Credentials) async throws -> Void
 }
 
 public struct DownloadProviding {
     var download: (URL, URL, Bool) async throws -> URL
+    var cleanup: () -> Void
 }
 
 class Downloader {
@@ -191,56 +187,6 @@ class Downloader {
         try? FileManager.default.removeItem(at: cacheURL)
     }
 
-    var assets: OlympUs.AuthenticationAssets!
-
-    public func authenticate(credentials: Credentials) async throws {
-        try await authenticate(username: credentials.username, password: credentials.password).singleOutput()
-    }
-
-    public func authenticate(username: String, password: String) -> Future<Void, DownloadError> {
-        Future { [weak self] promise in
-            guard let self = self else { return }
-            self.olymp.validateSession(for: username)
-                .catch { _ in
-                    self.olymp.getServiceKey(for: username)
-                        .flatMap { serviceKey in
-                            self.olymp.signIn(
-                                accountName: username,
-                                password: password,
-                                serviceKey: serviceKey
-                            )
-                        }
-                        .flatMap { authenticationAssets -> Future<ValidationType, OlympUsError> in
-                            self.assets = authenticationAssets
-                            return self.olymp.requestAuthentication(assets: self.assets)
-                        }
-                        .flatMap { validationType in
-                            self.olymp.sendSecurityCode(validationType: validationType, assets: self.assets)
-                        }
-                        .flatMap { _ in
-                            self.olymp.requestTrust(assets: self.assets)
-                        }
-                        .flatMap { _ in
-                            self.olymp.getOlympusSession(assets: self.assets, for: username)
-                        }
-                }
-                .flatMap { _ in
-                    self.olymp
-                        .getDownloadAuth(
-                            assets: self.assets != nil
-                                ? self.assets
-                                : self.olymp.storedAuthenticationAssets(for: username)!
-                        )
-                }
-                .sink(receiveCompletion: { _ in
-                    promise(.failure(.authenticationError))
-                }, receiveValue: { _ in
-                    promise(.success(()))
-                })
-                .store(in: &self.disposeBag)
-        }
-    }
-
     public func download(url: URL, destination: URL, disableSleep: Bool) async throws -> URL {
         try await download(url: url, destination: destination, disableSleep: disableSleep).singleOutput()
     }
@@ -284,5 +230,15 @@ class Downloader {
                 }
             }
             .eraseToAnyPublisher()
+    }
+
+    public func cleanup() {
+        olymp.cleanup()
+    }
+}
+
+extension Downloader {
+    var downloadProviding: DownloadProviding {
+        .init(download: download, cleanup: cleanup)
     }
 }
