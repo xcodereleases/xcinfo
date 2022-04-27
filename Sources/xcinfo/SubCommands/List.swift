@@ -1,11 +1,11 @@
 //
-//  Copyright © 2019 xcodereleases.com
+//  Copyright © 2022 xcodereleases.com
 //  MIT license - see LICENSE.md
 //
 
 import ArgumentParser
-import xcinfoCore
 import Rainbow
+import xcinfoCore
 
 extension Core.ListFilter: EnumerableFlag {}
 
@@ -33,8 +33,18 @@ extension XCInfo {
 
         func run() async throws {
             Rainbow.enabled = globals.useANSI
-            let core = Core(environment: .live(isVerboseLoggingEnabled: globals.isVerbose))
-            try await core.list(shouldUpdate: listOptions.updateList, showAllVersions: showAllVersions, filter: listFilter)
+            let environment = Environment.live(isVerboseLoggingEnabled: globals.isVerbose)
+            let core = Core(environment: environment)
+            do {
+                try await core.list(
+                    shouldUpdate: listOptions.updateList,
+                    showAllVersions: showAllVersions,
+                    filter: listFilter
+                )
+            } catch {
+                environment.logger.error(error.localizedDescription)
+                throw ExitCode.failure
+            }
         }
     }
 }

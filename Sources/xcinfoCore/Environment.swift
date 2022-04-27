@@ -26,7 +26,10 @@ public extension Environment {
         config.httpCookieStorage = .shared
         config.timeoutIntervalForRequest = 5
         let session = URLSession(configuration: config, delegate: sessionDelegateProxy, delegateQueue: nil)
-        let xcReleasesAPI = XCReleasesAPI(baseURL: URL(string: "https://xcodereleases.com/data.json")!, session: session)
+        let xcReleasesAPI = XCReleasesAPI(
+            baseURL: URL(string: "https://xcodereleases.com/data.json")!,
+            session: session
+        )
 
         let olymp = OlympUs(logger: logger, session: session)
         let downloader = Downloader(logger: logger, olymp: olymp, sessionDelegateProxy: sessionDelegateProxy)
@@ -43,7 +46,7 @@ public extension Environment {
     }
 }
 
-fileprivate let xcReleasesAPI: XCReleasesAPI = {
+private let xcReleasesAPI: XCReleasesAPI = {
     let config = URLSessionConfiguration.ephemeral
     config.httpCookieAcceptPolicy = .always
     config.httpCookieStorage = .shared
@@ -52,7 +55,7 @@ fileprivate let xcReleasesAPI: XCReleasesAPI = {
     return XCReleasesAPI(baseURL: URL(string: "https://xcodereleases.com/data.json")!, session: session)
 }()
 
-fileprivate let sessionDelegateProxy = URLSessionDelegateProxy()
+private let sessionDelegateProxy = URLSessionDelegateProxy()
 
 extension FileManager {
     var cachesDirectory: URL {

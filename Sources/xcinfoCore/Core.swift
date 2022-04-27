@@ -3,10 +3,10 @@
 //  MIT license - see LICENSE.md
 //
 
-import Foundation
-import XCModel
-import Prompt
 import AppKit
+import Foundation
+import Prompt
+import XCModel
 
 public enum CoreError: LocalizedError {
     case authenticationFailed
@@ -29,7 +29,7 @@ public enum CoreError: LocalizedError {
             return description
         case .invalidDownloadURL:
             return "Invalid download url"
-        case .versionNotFound(let version):
+        case let .versionNotFound(version):
             return "No Xcode found for given version '\(version)'."
         case let .extractionFailed(error):
             return error.localizedDescription
@@ -186,7 +186,11 @@ public class Core {
     }
 
     @discardableResult
-    public func download(version: XcodeVersion, options: DownloadOptions, updateVersionList: Bool) async throws -> (Xcode, URL) {
+    public func download(
+        version: XcodeVersion,
+        options: DownloadOptions,
+        updateVersionList _: Bool
+    ) async throws -> (Xcode, URL) {
         let xcode = try await identifyVersion(version, updateVersionList: true)
 
         guard let url = xcode.links?.download?.url else {
@@ -203,7 +207,11 @@ public class Core {
 
         environment.logger.beginSection("Downloading")
         do {
-            let downloadURL = try await environment.downloadProviding.download(url, options.destination, options.disableSleep)
+            let downloadURL = try await environment.downloadProviding.download(
+                url,
+                options.destination,
+                options.disableSleep
+            )
             environment.logger.log("Download to \(options.destination.path) complete.")
             return (xcode, downloadURL)
         } catch let error as XCAPIError {
@@ -220,10 +228,18 @@ public class Core {
             let xcode = try await identifyVersion(options.version, updateVersionList: true)
             downloadResult = (xcode, url)
         } else {
-            downloadResult = try await download(version: options.version, options: options.downloadOptions, updateVersionList: updateVersionList)
+            downloadResult = try await download(
+                version: options.version,
+                options: options.downloadOptions,
+                updateVersionList: updateVersionList
+            )
         }
 
-        let app = try await extractXIP(source: downloadResult.url, options: options.extractionOptions, xcode: downloadResult.xcode)
+        let app = try await extractXIP(
+            source: downloadResult.url,
+            options: options.extractionOptions,
+            xcode: downloadResult.xcode
+        )
 
         if !options.shouldPreserveXIP {
             try deleteDownload(at: downloadResult.url)
@@ -253,8 +269,12 @@ public class Core {
                 listFormatter.locale = Locale(identifier: "en_US")
                 environment.logger.verbose("Found: \(listFormatter.string(from: xcodes.map { $0.xcode.description })!)")
 
-                selected = choose("Please choose the version you want to uninstall: ", type: XcodeApplication.self) { settings in
-                    let longestXcodeNameLength = xcodes.map { $0.xcode.attributedDisplayName }.max(by: { $1.count > $0.count })!.count
+                selected = choose(
+                    "Please choose the version you want to uninstall: ",
+                    type: XcodeApplication.self
+                ) { settings in
+                    let longestXcodeNameLength = xcodes.map { $0.xcode.attributedDisplayName }
+                        .max(by: { $1.count > $0.count })!.count
                     for xcodeApp in xcodes {
                         let attributedName = xcodeApp.xcode.attributedDisplayName
                         let width = longestXcodeNameLength + attributedName.count - attributedName.raw.count
@@ -270,7 +290,8 @@ public class Core {
             let displayName = selected.xcode.attributedDisplayName
             if agree("Are you sure you want to uninstall Xcode \(displayName)?") {
                 do {
-                    environment.logger.verbose("Uninstalling Xcode \(selected.xcode.description) from \(selected.url.path) ...")
+                    environment.logger
+                        .verbose("Uninstalling Xcode \(selected.xcode.description) from \(selected.url.path) ...")
                     try FileManager.default.removeItem(at: selected.url)
                     environment.logger.success("\(selected.xcode.description) uninstalled!")
                 } catch {
@@ -282,9 +303,12 @@ public class Core {
         }
     }
 
-
     @discardableResult
-    public func extractXIP(source: URL, options: ExtractionOptions, xcode: Xcode? = nil) async throws -> XcodeApplication? {
+    public func extractXIP(
+        source: URL,
+        options: ExtractionOptions,
+        xcode: Xcode? = nil
+    ) async throws -> XcodeApplication? {
         environment.logger.beginSection("Extracting")
 
         guard source.pathExtension.lowercased() == "xip" else {
@@ -294,7 +318,10 @@ public class Core {
         let start = Date()
         defer {
             let end = Date()
-            environment.logger.verbose("Extraction time: \(Int((end.timeIntervalSinceReferenceDate - start.timeIntervalSinceReferenceDate).rounded(.up))) seconds.")
+            environment.logger
+                .verbose(
+                    "Extraction time: \(Int((end.timeIntervalSinceReferenceDate - start.timeIntervalSinceReferenceDate).rounded(.up))) seconds."
+                )
         }
 
         let extractor = Extractor(
@@ -334,7 +361,13 @@ extension Core {
         environment.logger.beginSection("Identifying")
         let availableXcodes = try await findXcodes(for: version, shouldUpdate: updateVersionList)
 
-        guard let xcode = chooseXcode(version: version, from: availableXcodes, prompt: "Please choose the version you want to install: ") else {
+        guard
+            let xcode = chooseXcode(
+                version: version,
+                from: availableXcodes,
+                prompt: "Please choose the version you want to install: "
+            )
+        else {
             throw CoreError.versionNotFound(version)
         }
         return xcode
@@ -360,20 +393,31 @@ extension Core {
         }
 
         environment.logger.log("Installed Xcode to \(xcode.url.path)")
-        NSWorkspace.shared.selectFile(xcode.url.path, inFileViewerRootedAtPath: xcode.url.deletingLastPathComponent().path)
+        NSWorkspace.shared.selectFile(
+            xcode.url.path,
+            inFileViewerRootedAtPath: xcode.url.deletingLastPathComponent().path
+        )
     }
 
     private func enableDeveloperMode(password: String) throws {
         environment.logger.log("Enabling Developer Mode...")
 
-        let result1 = Shell.executePrivileged(command: "/usr/sbin/DevToolsSecurity", password: password, args: ["-enable"]).exitStatus
+        let result1 = Shell.executePrivileged(
+            command: "/usr/sbin/DevToolsSecurity",
+            password: password,
+            args: ["-enable"]
+        ).exitStatus
 
         guard result1 == EXIT_SUCCESS else {
             environment.logger.log("Enabling Developer Mode \("✗".red)", onSameLine: true)
             throw CoreError.installationFailed
         }
 
-        let result2 = Shell.executePrivileged(command: "/usr/sbin/dseditgroup", password: password, args: "-o edit -t group -a staff _developer".components(separatedBy: " ")).exitStatus
+        let result2 = Shell.executePrivileged(
+            command: "/usr/sbin/dseditgroup",
+            password: password,
+            args: "-o edit -t group -a staff _developer".components(separatedBy: " ")
+        ).exitStatus
 
         guard result2 == EXIT_SUCCESS else {
             environment.logger.log("Enabling Developer Mode \("✗".red)", onSameLine: true)
@@ -385,7 +429,11 @@ extension Core {
 
     private func approveLicense(password: String, url: URL) throws {
         environment.logger.log("Approving License...")
-        let result = Shell.executePrivileged(command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild", password: password, args: ["-license", "accept"]).exitStatus
+        let result = Shell.executePrivileged(
+            command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild",
+            password: password,
+            args: ["-license", "accept"]
+        ).exitStatus
 
         guard result == EXIT_SUCCESS else {
             environment.logger.log("Approving License \("✗".red)", onSameLine: true)
@@ -397,7 +445,11 @@ extension Core {
 
     private func installComponents(password: String, url: URL) throws {
         environment.logger.log("Install additional components...")
-        let result = Shell.executePrivileged(command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild", password: password, args: ["-runFirstLaunch"]).exitStatus
+        let result = Shell.executePrivileged(
+            command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild",
+            password: password,
+            args: ["-runFirstLaunch"]
+        ).exitStatus
 
         guard result == EXIT_SUCCESS else {
             environment.logger.log("Install additional components \("✗".red)", onSameLine: true)
@@ -421,7 +473,10 @@ extension Core {
             let installed = installedXcodes(knownVersions: knownXcodes)
 
             if let xcodeApp = installed.first(where: { $0.url == symlinkURL }) {
-                environment.logger.verbose("\(symlinkURL.path) already exists. Moving it to /Applications/\(xcodeApp.xcode.filename).", onSameLine: true)
+                environment.logger.verbose(
+                    "\(symlinkURL.path) already exists. Moving it to /Applications/\(xcodeApp.xcode.filename).",
+                    onSameLine: true
+                )
                 let destination = URL(fileURLWithPath: "/Applications/\(xcodeApp.xcode.filename)")
                 try? fileManager.moveItem(at: symlinkURL, to: destination)
             }
@@ -434,7 +489,8 @@ extension Core {
 
     func selectXcode(at url: URL, password: String) throws {
         environment.logger.log("Selecting Xcode...")
-        let result = Shell.executePrivileged(command: "xcode-select", password: password, args: ["-s", url.path]).exitStatus
+        let result = Shell.executePrivileged(command: "xcode-select", password: password, args: ["-s", url.path])
+            .exitStatus
 
         guard result == EXIT_SUCCESS else {
             environment.logger.log("Selecting Xcode \("✗".red)", onSameLine: true)
@@ -472,7 +528,8 @@ extension Core {
                 }
             }
             possiblePassword = getPwd(prompt: prompt)
-        } while possiblePassword == nil && passwordAttempts < maxPasswordAttempts
+        } while
+            possiblePassword == nil && passwordAttempts < maxPasswordAttempts
 
         guard let password = possiblePassword else {
             environment.logger.verbose("3rd incorrect password attempt. Terminating...")
@@ -483,7 +540,14 @@ extension Core {
 
     private func verify(_ app: XcodeApplication) throws {
         environment.logger.log("Verifying Xcode...")
-        var exitStatus = Shell.execute("/usr/sbin/spctl", args: "--assess", "--verbose", "--type", "execute", app.url.path).exitStatus
+        var exitStatus = Shell.execute(
+            "/usr/sbin/spctl",
+            args: "--assess",
+            "--verbose",
+            "--type",
+            "execute",
+            app.url.path
+        ).exitStatus
         guard exitStatus == EXIT_SUCCESS else {
             throw CoreError.gatekeeperVerificationFailed(app.url)
         }
@@ -497,7 +561,7 @@ extension Core {
         environment.logger.log("Verifying Xcode \("✓".cyan)", onSameLine: true)
     }
 
-    private func deleteDownload(at url: URL)  throws {
+    private func deleteDownload(at url: URL) throws {
         environment.logger.log("Deleting downloaded Xcode archive...")
         try FileManager.default.removeItem(at: url)
     }
@@ -508,7 +572,7 @@ extension Core {
         guard !knownXcodes.isEmpty else { return [] }
 
         switch version {
-        case .version(let version):
+        case let .version(version):
             let (fullVersion, betaVersion) = extractVersionParts(from: version)
             return knownXcodes.filter {
                 filter(xcode: $0, fullVersion: fullVersion, betaVersion: betaVersion, version: version)
@@ -547,7 +611,8 @@ extension Core {
 
     private func filter(xcode: Xcode, fullVersion: String?, betaVersion: Int?, version: String) -> Bool {
         if let betaVersion = betaVersion {
-            let versionNumberHaveSamePrefix = xcode.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true
+            let versionNumberHaveSamePrefix = xcode.version.number?.lowercased()
+                .hasPrefix(fullVersion ?? version) == true
             let betaVersionsAreSame: Bool = {
                 guard case let .beta(version) = xcode.version.release else { return false }
                 return version == betaVersion
@@ -557,7 +622,7 @@ extension Core {
             return versionNumberHaveSamePrefix && betaVersionsAreSame || areSameVersions
         } else {
             return xcode.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true ||
-            xcode.version.build?.lowercased() == version
+                xcode.version.build?.lowercased() == version
         }
     }
 
@@ -566,11 +631,11 @@ extension Core {
         case 0:
             return nil
         case 1:
-            let version = xcodes.first
-            environment.logger.log("Found matching Xcode \(version!.attributedDisplayName).")
+            environment.logger.log("Found matching Xcode \(xcodes[0].attributedDisplayName).")
             return xcodes.first
         default:
-            environment.logger.log("Found multiple possibilities for the requested version '\(version.description.cyan)'.")
+            environment.logger
+                .log("Found multiple possibilities for the requested version '\(version.description.cyan)'.")
 
             let selectedVersion = choose(prompt, type: Xcode.self) { settings in
                 xcodes.forEach { xcode in
@@ -603,8 +668,10 @@ extension Core {
         return paths.compactMap { path -> XcodeApplication? in
             let url = URL(fileURLWithPath: String(path))
             let versionURL = url.appendingPathComponent("Contents/version.plist")
-            if let plistBuild = NSDictionary(contentsOfFile: versionURL.path)?["ProductBuildVersion"] as? String,
-               let release = knownVersions.first(where: { $0.version.build == plistBuild }) {
+            if
+                let plistBuild = NSDictionary(contentsOfFile: versionURL.path)?["ProductBuildVersion"] as? String,
+                let release = knownVersions.first(where: { $0.version.build == plistBuild })
+            {
                 return XcodeApplication(url: url, xcode: release)
             } else {
                 return nil
@@ -633,42 +700,51 @@ extension Core {
         let installableVersions = versions.filter {
             guard let installableOsVersion = OperatingSystemVersion(string: $0.requires) else { return false }
             return $0.links?.download?.url != nil &&
-            ProcessInfo.processInfo.isOperatingSystemAtLeast(installableOsVersion)
+                ProcessInfo.processInfo.isOperatingSystemAtLeast(installableOsVersion)
         }
 
         let allVersions = Set(versions)
 
-        let listedVersions = (showAllVersions
+        let listedVersions = (
+            showAllVersions
                 ? versions
                 : installableVersions.filter {
                     let components = DateComponents(year: -1)
                     let referenceDate = Calendar.current.date(byAdding: components, to: Date())!
                     return $0.releaseDate > referenceDate
                 }
-            )
-            .sorted(by: >)
+        )
+        .sorted(by: >)
 
         printXcodeVersionList(xcodeVersions: listedVersions.map { $0.attributedDisplayName }, columnWidth: columnWidth)
 
-        let installedVersions = self.installedXcodes(knownVersions: versions).map { $0.xcode }
+        let installedVersions = installedXcodes(knownVersions: versions).map { $0.xcode }
 
         if !installedVersions.isEmpty {
             environment.logger.log("\nAlready installed:")
 
-            printXcodeVersionList(xcodeVersions: installedVersions.sorted(by: >).map { $0.attributedDisplayName }, columnWidth: columnWidth)
+            printXcodeVersionList(
+                xcodeVersions: installedVersions.sorted(by: >).map { $0.attributedDisplayName },
+                columnWidth: columnWidth
+            )
         }
 
         let notInstallableVersions = allVersions.subtracting(installableVersions)
         if !notInstallableVersions.isEmpty {
             environment.logger.log("\nNot installable:")
 
-            printXcodeVersionList(xcodeVersions: notInstallableVersions.sorted(by: >).map { $0.description }, columnWidth: columnWidth)
+            printXcodeVersionList(
+                xcodeVersions: notInstallableVersions.sorted(by: >).map { $0.description },
+                columnWidth: columnWidth
+            )
         }
     }
 
     private func printXcodeVersionList(xcodeVersions: [String], columnWidth: Int) {
-        if xcodeVersions.count > 10,
-           let windowSize = WindowSize.current {
+        if
+            xcodeVersions.count > 10,
+            let windowSize = WindowSize.current
+        {
             let cols = Int((Double(windowSize.columns) / Double(columnWidth)).rounded(.down))
             let rows = Int((Double(xcodeVersions.count) / Double(cols)).rounded(.up))
 

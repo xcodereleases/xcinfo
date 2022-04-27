@@ -1,5 +1,5 @@
 //
-//  Copyright © 2019 xcodereleases.com
+//  Copyright © 2022 xcodereleases.com
 //  MIT license - see LICENSE.md
 //
 
@@ -63,19 +63,22 @@ class CredentialService {
     }
 
     func cleanup() {
-            do {
-                let items = try KeychainPasswordItem.passwordItems(forService: "xcinfo.appleid")
-                if !items.isEmpty {
-                    for item in items {
-                        try item.deleteItem()
-                    }
-                    logger.success("Deleted stored Apple ID credentials from keychain.")
-                } else {
-                    logger.log("No Apple ID credentials were stored.")
+        do {
+            let items = try KeychainPasswordItem.passwordItems(forService: "xcinfo.appleid")
+            if !items.isEmpty {
+                for item in items {
+                    try item.deleteItem()
                 }
-            } catch {
-                logger.error("Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcinfo.appleid'.")
+                logger.success("Deleted stored Apple ID credentials from keychain.")
+            } else {
+                logger.log("No Apple ID credentials were stored.")
             }
+        } catch {
+            logger
+                .error(
+                    "Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcinfo.appleid'."
+                )
+        }
     }
 }
 

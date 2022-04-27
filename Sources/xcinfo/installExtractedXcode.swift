@@ -1,15 +1,20 @@
-//#if DEBUG
-//import Guaka
-//import Foundation
-//import xcinfoCore
 //
-//var installExtractedXcodeCommand = Command(
+//  Copyright © 2022 xcodereleases.com
+//  MIT license - see LICENSE.md
+//
+
+// #if DEBUG
+// import Guaka
+// import Foundation
+// import xcinfoCore
+//
+// var installExtractedXcodeCommand = Command(
 //    usage: "installExtractedXcode",
 //    configuration: configuration,
 //    run: execute
-//)
+// )
 //
-//private func configuration(command: Command) {
+// private func configuration(command: Command) {
 //    command.add(flags: [
 //        Flag(shortName: "p",
 //             longName: "path",
@@ -22,9 +27,9 @@
 //             value: false,
 //             description: "Skip selecting the new Xcode version as the current Command Line Tools"),
 //    ])
-//}
+// }
 //
-//private func execute(flags: Flags, args: [String]) {
+// private func execute(flags: Flags, args: [String]) {
 //    guard let path = flags.getString(name: "path") else {
 //        fail(statusCode: Int(EXIT_FAILURE), errorMessage: "No path specified.")
 //    }
@@ -48,5 +53,5 @@
 //                      skipSymlinkCreation: skipSymlinkCreation,
 //                      skipXcodeSelection: skipXcodeSelection,
 //                      skipVerification: true)
-//}
-//#endif
+// }
+// #endif

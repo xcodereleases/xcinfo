@@ -1,5 +1,5 @@
 //
-//  Copyright © 2019 xcodereleases.com
+//  Copyright © 2022 xcodereleases.com
 //  MIT license - see LICENSE.md
 //
 
@@ -96,7 +96,7 @@ class Downloader {
                             let logMessage = [
                                 progressDisplay.representation,
                                 "remaining: \(Self.byteCountFormatter.string(from: download.remainingBytes))",
-                                "speed: \(Self.byteCountFormatter.string(from: download.downloadSpeed()))/s",
+                                "speed: \(Self.byteCountFormatter.string(from: download.downloadSpeed()))/s"
                             ].joined(separator: ", ")
                             self.logger.log(logMessage, onSameLine: true)
                         } else {
@@ -116,7 +116,7 @@ class Downloader {
                             formatter.allowedUnits = [.hour, .minute, .second]
                             let logMessage = [
                                 progressDisplay.representation,
-                                "Download time: \(formatter.string(from: downloadTime) ?? "???")",
+                                "Download time: \(formatter.string(from: downloadTime) ?? "???")"
                             ].joined(separator: ", ")
                             self.logger.log(logMessage, onSameLine: true)
                         } else {
@@ -153,9 +153,9 @@ class Downloader {
     public func cacheURL(for url: URL) -> URL? {
         guard
             let cache = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
-                .appendingPathComponent("xcinfo")
+            .appendingPathComponent("xcinfo")
         else {
-            self.logger.error("Unable to save unfinished download")
+            logger.error("Unable to save unfinished download")
             return nil
         }
 
@@ -167,15 +167,15 @@ class Downloader {
 
     private func saveResumeData(_ resumeData: Data, for url: URL) {
         guard let targetURL = cacheURL(for: url) else {
-            self.logger.error("Unable to save unfinished download")
+            logger.error("Unable to save unfinished download")
             return
         }
 
         do {
             try resumeData.write(to: targetURL)
         } catch {
-            self.logger.error("Unable to save unfinished download")
-            self.logger.error(error.localizedDescription)
+            logger.error("Unable to save unfinished download")
+            logger.error(error.localizedDescription)
         }
     }
 

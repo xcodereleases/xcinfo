@@ -61,8 +61,8 @@ class AppleAuthenticator {
                     self.olymp
                         .getDownloadAuth(
                             assets: self.assets != nil
-                            ? self.assets
-                            : self.olymp.storedAuthenticationAssets(for: username)!
+                                ? self.assets
+                                : self.olymp.storedAuthenticationAssets(for: username)!
                         )
                 }
                 .sink(receiveCompletion: { _ in

@@ -1,11 +1,11 @@
 //
-//  Copyright © 2019 xcodereleases.com
+//  Copyright © 2022 xcodereleases.com
 //  MIT license - see LICENSE.md
 //
 
 import ArgumentParser
-import xcinfoCore
 import Rainbow
+import xcinfoCore
 
 extension XCInfo {
     struct Installed: AsyncParsableCommand {
@@ -22,8 +22,14 @@ extension XCInfo {
 
         func run() async throws {
             Rainbow.enabled = globals.useANSI
-            let core = Core(environment: .live(isVerboseLoggingEnabled: globals.isVerbose))
-            try await core.installedXcodes(shouldUpdate: listOptions.updateList)
+            let environment = Environment.live(isVerboseLoggingEnabled: globals.isVerbose)
+            let core = Core(environment: environment)
+            do {
+                try await core.installedXcodes(shouldUpdate: listOptions.updateList)
+            } catch {
+                environment.logger.error(error.localizedDescription)
+                throw ExitCode.failure
+            }
         }
     }
 }

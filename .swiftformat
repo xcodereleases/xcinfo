@@ -2,4 +2,17 @@
 --header "//\n//  Copyright © {year} xcodereleases.com\n//  MIT license - see LICENSE.md\n//"
 --exclude "**/Package.swift"
 --enable isEmpty
+--maxwidth 120
+--wraparguments before-first
+--wrapcollections before-first
+--binarygrouping none
+--commas inline
+--decimalgrouping 3
+--hexgrouping none
+--hexliteralcase lowercase
+--ifdef no-indent
+--octalgrouping none
+--semicolons never
+--disable unusedArguments
+--disable preferKeyPath
 --disable redundantNilInit

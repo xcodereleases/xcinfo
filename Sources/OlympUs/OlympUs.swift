@@ -1,12 +1,12 @@
 //
-//  Copyright © 2019 xcodereleases.com
+//  Copyright © 2022 xcodereleases.com
 //  MIT license - see LICENSE.md
 //
 
-import Rainbow
 import Combine
 import Foundation
 import Prompt
+import Rainbow
 import XCIFoundation
 
 public enum OlympUsError: Error {
@@ -91,7 +91,10 @@ extension ValidationType {
             let body = VerifyTrustedDeviceRequest(securityCode: SecurityCode(code: code))
             return try! JSONEncoder().encode(body)
         case let .verificationCode(phoneId, code):
-            let body = VerifyPhoneRequest(phoneNumber: VerifyPhoneRequest.TrustedNumber(id: phoneId), securityCode: SecurityCode(code: code))
+            let body = VerifyPhoneRequest(
+                phoneNumber: VerifyPhoneRequest.TrustedNumber(id: phoneId),
+                securityCode: SecurityCode(code: code)
+            )
             return try! JSONEncoder().encode(body)
         }
     }
@@ -110,21 +113,47 @@ public class URLSessionDelegateProxy: NSObject, URLSessionDownloadDelegate {
         }
     }
 
-    public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+    public func urlSession(
+        _ session: URLSession,
+        downloadTask: URLSessionDownloadTask,
+        didFinishDownloadingTo location: URL
+    ) {
         proxies.forEach { proxy in
             proxy.urlSession(session, downloadTask: downloadTask, didFinishDownloadingTo: location)
         }
     }
 
-    public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+    public func urlSession(
+        _ session: URLSession,
+        downloadTask: URLSessionDownloadTask,
+        didWriteData bytesWritten: Int64,
+        totalBytesWritten: Int64,
+        totalBytesExpectedToWrite: Int64
+    ) {
         proxies.forEach { proxy in
-            proxy.urlSession?(session, downloadTask: downloadTask, didWriteData: bytesWritten, totalBytesWritten: totalBytesWritten, totalBytesExpectedToWrite: totalBytesExpectedToWrite)
+            proxy.urlSession?(
+                session,
+                downloadTask: downloadTask,
+                didWriteData: bytesWritten,
+                totalBytesWritten: totalBytesWritten,
+                totalBytesExpectedToWrite: totalBytesExpectedToWrite
+            )
         }
     }
 
-    public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didResumeAtOffset fileOffset: Int64, expectedTotalBytes: Int64) {
+    public func urlSession(
+        _ session: URLSession,
+        downloadTask: URLSessionDownloadTask,
+        didResumeAtOffset fileOffset: Int64,
+        expectedTotalBytes: Int64
+    ) {
         proxies.forEach { proxy in
-            proxy.urlSession?(session, downloadTask: downloadTask, didResumeAtOffset: fileOffset, expectedTotalBytes: expectedTotalBytes)
+            proxy.urlSession?(
+                session,
+                downloadTask: downloadTask,
+                didResumeAtOffset: fileOffset,
+                expectedTotalBytes: expectedTotalBytes
+            )
         }
     }
 
@@ -146,7 +175,7 @@ extension OlympUs.AuthenticationAssets: Codable {}
 public class OlympUs {
     private var disposeBag = Set<AnyCancellable>()
     private let logger: Logger
-    
+
     public private(set) var state: OlympUsState? {
         didSet {
             displayState()
@@ -268,7 +297,11 @@ public class OlympUs {
         var authenticationType: String?
     }
 
-    public func signIn(accountName: String, password: String, serviceKey: String) -> Future<AuthenticationAssets, OlympUsError> {
+    public func signIn(
+        accountName: String,
+        password: String,
+        serviceKey: String
+    ) -> Future<AuthenticationAssets, OlympUsError> {
         Future { promise in
             self.state = .signingIn
             self.session.configuration.httpCookieStorage?.removeCookies(since: Date(timeIntervalSinceReferenceDate: 0))
@@ -291,7 +324,8 @@ public class OlympUs {
                     if
                         let httpResponse = $0.response as? HTTPURLResponse,
                         let scnt = httpResponse.allHeaderFields["scnt"] as? String,
-                        let asid = httpResponse.allHeaderFields["X-Apple-ID-Session-Id"] as? String {
+                        let asid = httpResponse.allHeaderFields["X-Apple-ID-Session-Id"] as? String
+                    {
                         authenticationAssets.asid = asid
                         authenticationAssets.scnt = scnt
                     }
@@ -353,7 +387,10 @@ public class OlympUs {
                 }, receiveValue: { response in
                     let requiredCodeLength = response.securityCode.length
                     self.logger.log("\nTwo-factor authentication is enabled for your account.")
-                    self.logger.log("Please enter a \(requiredCodeLength) digit verification code generated on one of your trusted devices.")
+                    self.logger
+                        .log(
+                            "Please enter a \(requiredCodeLength) digit verification code generated on one of your trusted devices."
+                        )
                     self.logger.log("Type '\("sms".magenta)' to receive a verification code on a trusted phone number.")
                     let input = ask("Apple ID Verification Code: ", type: String.self) { settings in
                         settings.addInvalidCase("Invalide code length") { value in
@@ -379,7 +416,10 @@ public class OlympUs {
                                     promise(.failure(.requestSmsFailed))
                                 }
                             }, receiveValue: { _ in
-                                let smsCode = ask("Please enter the received verification code:", type: String.self) { settings in
+                                let smsCode = ask(
+                                    "Please enter the received verification code:",
+                                    type: String.self
+                                ) { settings in
                                     settings.addInvalidCase("Invalid code length") { value in
                                         requiredCodeLength != value.count
                                     }
@@ -399,7 +439,10 @@ public class OlympUs {
 
 //    MARK: - send security code -
 
-    public func sendSecurityCode(validationType: ValidationType, assets: AuthenticationAssets) -> Future<Int, OlympUsError> {
+    public func sendSecurityCode(
+        validationType: ValidationType,
+        assets: AuthenticationAssets
+    ) -> Future<Int, OlympUsError> {
         Future { promise in
             self.state = .sendingSecurityCode
             var request = self.request(forURL: validationType.verificationURL, assets: assets, method: .post)
@@ -441,7 +484,10 @@ public class OlympUs {
                     }
                 }, receiveValue: { response in
                     if let httpResponse = response as? HTTPURLResponse {
-                        let responseCookies = HTTPCookie.cookies(withResponseHeaderFields: httpResponse.allHeaderFields as! [String: String], for: self.trustURL)
+                        let responseCookies = HTTPCookie.cookies(
+                            withResponseHeaderFields: httpResponse.allHeaderFields as! [String: String],
+                            for: self.trustURL
+                        )
                         promise(.success(responseCookies))
                     } else {
                         promise(.failure(.deviceTrustFailed))
@@ -491,10 +537,13 @@ public class OlympUs {
         let regex = try! NSRegularExpression(pattern: #"(?<!Expires=\w{3}),"#, options: [])
         var cookieDict: [String: String] = [:]
         var startIndex = originalCookies.startIndex
-        regex.enumerateMatches(in: originalCookies,
-                               options: [],
-                               range: NSRange(originalCookies.startIndex..., in: originalCookies)) { result, _, _ in
-            guard let nsrange = result?.range, let range = Range<String.Index>(nsrange, in: originalCookies) else { return }
+        regex.enumerateMatches(
+            in: originalCookies,
+            options: [],
+            range: NSRange(originalCookies.startIndex..., in: originalCookies)
+        ) { result, _, _ in
+            guard let nsrange = result?.range,
+                  let range = Range<String.Index>(nsrange, in: originalCookies) else { return }
             let match = originalCookies[startIndex ..< range.lowerBound]
             startIndex = range.upperBound
             let keyValuePair = match.split(separator: "=")
@@ -509,7 +558,9 @@ public class OlympUs {
 
         let appleURL = URL(string: "apple.com")!
         let cookies = cookieDict
-            .flatMap { HTTPCookie.cookies(withResponseHeaderFields: ["Set-Cookie": "\($0.key)=\($0.value)"], for: appleURL) }
+            .flatMap {
+                HTTPCookie.cookies(withResponseHeaderFields: ["Set-Cookie": "\($0.key)=\($0.value)"], for: appleURL)
+            }
 
         cookies.forEach {
             self.session.configuration.httpCookieStorage?.setCookie($0)
@@ -519,7 +570,8 @@ public class OlympUs {
         return true
     }
 
-    private let downloadAuthURL = URL(string: "https://developer.apple.com/services-account/QH65B2/downloadws/listDownloads.action")!
+    private let downloadAuthURL =
+        URL(string: "https://developer.apple.com/services-account/QH65B2/downloadws/listDownloads.action")!
     public func getDownloadAuth(assets: AuthenticationAssets) -> Future<Void, OlympUsError> {
         Future { promise in
             self.state = .gettingDownloadAuth
@@ -532,7 +584,9 @@ public class OlympUs {
                     }
                 }, receiveValue: { output in
                     if self.handle(response: output.response),
-                        self.session.configuration.httpCookieStorage?.cookies?.contains(where: { $0.name == "ADCDownloadAuth" }) == true {
+                       self.session.configuration.httpCookieStorage?.cookies?
+                       .contains(where: { $0.name == "ADCDownloadAuth" }) == true
+                    {
                         promise(.success(()))
                     } else {
                         promise(.failure(.downloadAuthFailed))
@@ -559,7 +613,10 @@ public class OlympUs {
                 logger.log("No Apple developer portal session info was stored.")
             }
         } catch {
-            logger.error("Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcinfo.session'.")
+            logger
+                .error(
+                    "Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcinfo.session'."
+                )
         }
     }
 

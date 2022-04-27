@@ -1,5 +1,5 @@
 //
-//  Copyright © 2020 xcodereleases.com
+//  Copyright © 2022 xcodereleases.com
 //  MIT license - see LICENSE.md
 //
 
@@ -7,7 +7,7 @@ import Foundation
 
 typealias ProcessExecutionResult = (exitStatus: Int, stdout: String, stderr: String)
 
-struct Shell {
+enum Shell {
     static func execute(_ command: String, args: String...) -> ProcessExecutionResult {
         execute(command, args: args)
     }
@@ -67,7 +67,9 @@ struct Shell {
         return (Int(p2.terminationStatus), stdout, stderr)
     }
 
-    static func ask(_ prompt: String, secure: Bool = false, validation: (String) -> Bool = { _ in true }) throws -> String {
+    static func ask(_ prompt: String, secure: Bool = false, validation: (String) -> Bool = { _ in
+        true
+    }) throws -> String {
         if secure {
             let pwd = String(cString: getpass("\(prompt) "))
             if validation(pwd) {

@@ -1,11 +1,11 @@
 //
-//  Copyright © 2019 xcodereleases.com
+//  Copyright © 2022 xcodereleases.com
 //  MIT license - see LICENSE.md
 //
 
 import ArgumentParser
-import xcinfoCore
 import Foundation
+import xcinfoCore
 
 @main
 struct XCInfo: AsyncParsableCommand {
@@ -58,7 +58,7 @@ struct DownloadOptions: ParsableArguments {
         help: "The download destination folder.",
         completion: .directory
     )
-    var downloadDirectory: URL = URL(fileURLWithPath: "\(NSHomeDirectory())/Downloads").standardizedFileURL
+    var downloadDirectory: URL = .init(fileURLWithPath: "\(NSHomeDirectory())/Downloads").standardizedFileURL
 
     @Flag(
         name: [.customLong("sleep")],
@@ -74,7 +74,7 @@ struct ExtractionOptions: ParsableArguments {
         help: "The directory to install the code version in.",
         completion: .directory
     )
-    var installationDirectory: URL = URL(fileURLWithPath: "/Applications")
+    var installationDirectory: URL = .init(fileURLWithPath: "/Applications")
 
     @Flag(
         help: "Uses experimental (way faster) version of unxip."

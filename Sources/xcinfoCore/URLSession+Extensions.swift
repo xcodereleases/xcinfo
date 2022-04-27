@@ -1,8 +1,6 @@
 //
-//  File.swift
-//  
-//
-//  Created by Gunnar Herzog on 23.04.22.
+//  Copyright © 2022 xcodereleases.com
+//  MIT license - see LICENSE.md
 //
 
 import Foundation

@@ -1,12 +1,12 @@
 //
-//  Copyright © 2019 xcodereleases.com
+//  Copyright © 2022 xcodereleases.com
 //  MIT license - see LICENSE.md
 //
 
 import ArgumentParser
-import xcinfoCore
-import Rainbow
 import Foundation
+import Rainbow
+import xcinfoCore
 
 extension XCInfo {
     struct Install: AsyncParsableCommand {

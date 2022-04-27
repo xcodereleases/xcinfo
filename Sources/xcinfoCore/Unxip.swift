@@ -1,5 +1,7 @@
-// From: https://github.com/saagarjha/unxip
-// License: GNU Lesser General Public License v3.0
+//
+//  Copyright © 2022 xcodereleases.com
+//  MIT license - see LICENSE.md
+//
 
 import Compression
 import Foundation
@@ -7,19 +9,19 @@ import Foundation
 extension RandomAccessCollection {
     subscript(fromOffset fromOffset: Int = 0, toOffset toOffset: Int? = nil) -> SubSequence {
         let toOffset = toOffset ?? count
-        return self[index(startIndex, offsetBy: fromOffset)..<index(startIndex, offsetBy: toOffset)]
+        return self[index(startIndex, offsetBy: fromOffset) ..< index(startIndex, offsetBy: toOffset)]
     }
 
     subscript(fromOffset fromOffset: Int = 0, size size: Int) -> SubSequence {
         let base = index(startIndex, offsetBy: fromOffset)
-        return self[base..<index(base, offsetBy: size)]
+        return self[base ..< index(base, offsetBy: size)]
     }
 }
 
 extension AsyncStream.Continuation {
     func yieldWithBackoff(_ value: Element) async {
         let backoff: UInt64 = 1_000_000
-        while case .dropped(_) = yield(value) {
+        while case .dropped = yield(value) {
             try? await Task.sleep(nanoseconds: backoff)
         }
     }
@@ -76,9 +78,9 @@ struct ConcurrentStream<TaskResult: Sendable> {
         let task = Task {
             await operation()
         }
-        operations.append({
+        operations.append {
             await task.value
-        })
+        }
         return task
     }
 }
@@ -118,10 +120,10 @@ struct File {
     }
 
     func writeCompressedIfPossible(usingDescriptor descriptor: CInt) async -> Bool {
-        let blockSize = 64 << 10  // LZFSE with 64K block size
+        let blockSize = 64 << 10 // LZFSE with 64K block size
         var _data = [UInt8]()
         _data.reserveCapacity(self.data.map(\.count).reduce(0, +))
-        let data = self.data.reduce(into: _data, +=)
+        let data = data.reduce(into: _data, +=)
         var compressionStream = ConcurrentStream<[UInt8]?>()
         var position = data.startIndex
 
@@ -131,15 +133,23 @@ struct File {
                 try Task.checkCancellation()
                 let position = _position
                 let end = min(position + blockSize, data.endIndex)
-                let data = [UInt8](unsafeUninitializedCapacity: (end - position) + (end - position) / 16) { buffer, count in
-                    data[position..<end].withUnsafeBufferPointer { data in
-                        count = compression_encode_buffer(buffer.baseAddress!, buffer.count, data.baseAddress!, data.count, nil, COMPRESSION_LZFSE)
-                        guard count < buffer.count else {
-                            count = 0
-                            return
+                let data =
+                    [UInt8](unsafeUninitializedCapacity: (end - position) + (end - position) / 16) { buffer, count in
+                        data[position ..< end].withUnsafeBufferPointer { data in
+                            count = compression_encode_buffer(
+                                buffer.baseAddress!,
+                                buffer.count,
+                                data.baseAddress!,
+                                data.count,
+                                nil,
+                                COMPRESSION_LZFSE
+                            )
+                            guard count < buffer.count else {
+                                count = 0
+                                return
+                            }
                         }
                     }
-                }
                 return !data.isEmpty ? data : nil
             }
             position += blockSize
@@ -164,7 +174,7 @@ struct File {
 
             func writePosition(toTableIndex index: Int) {
                 precondition(position < UInt32.max)
-                for i in 0..<MemoryLayout<UInt32>.size {
+                for i in 0 ..< MemoryLayout<UInt32>.size {
                     buffer[index * MemoryLayout<UInt32>.size + i] = UInt8(position >> (i * 8) & 0xff)
                 }
             }
@@ -179,20 +189,21 @@ struct File {
         }
 
         let attribute =
-        "cmpf".utf8.reversed()  // magic
-        + [0x0c, 0x00, 0x00, 0x00]  // LZFSE, 64K chunks
-        + ([
-            (data.count >> 0) & 0xff,
-            (data.count >> 8) & 0xff,
-            (data.count >> 16) & 0xff,
-            (data.count >> 24) & 0xff,
-            (data.count >> 32) & 0xff,
-            (data.count >> 40) & 0xff,
-            (data.count >> 48) & 0xff,
-            (data.count >> 56) & 0xff,
-        ].map(UInt8.init) as [UInt8])
+            "cmpf".utf8.reversed() // magic
+                + [0x0c, 0x00, 0x00, 0x00] // LZFSE, 64K chunks
+                + ([
+                    (data.count >> 0) & 0xff,
+                    (data.count >> 8) & 0xff,
+                    (data.count >> 16) & 0xff,
+                    (data.count >> 24) & 0xff,
+                    (data.count >> 32) & 0xff,
+                    (data.count >> 40) & 0xff,
+                    (data.count >> 48) & 0xff,
+                    (data.count >> 56) & 0xff
+                ].map(UInt8.init) as [UInt8])
 
-        guard fsetxattr(descriptor, "com.apple.decmpfs", attribute, attribute.count, 0, XATTR_SHOWCOMPRESSION) == 0 else {
+        guard fsetxattr(descriptor, "com.apple.decmpfs", attribute, attribute.count, 0, XATTR_SHOWCOMPRESSION) == 0
+        else {
             return false
         }
 
@@ -241,13 +252,16 @@ struct Unxip {
 
     let options: Options
 
-    func read<Integer: BinaryInteger, Buffer: RandomAccessCollection>(_ type: Integer.Type, from buffer: inout Buffer) -> Integer where Buffer.Element == UInt8, Buffer.SubSequence == Buffer {
+    func read<Integer: BinaryInteger, Buffer: RandomAccessCollection>(
+        _ type: Integer.Type,
+        from buffer: inout Buffer
+    ) -> Integer where Buffer.Element == UInt8, Buffer.SubSequence == Buffer {
         defer {
             buffer = buffer[fromOffset: MemoryLayout<Integer>.size]
         }
         var result: Integer = 0
         var iterator = buffer.makeIterator()
-        for _ in 0..<MemoryLayout<Integer>.size {
+        for _ in 0 ..< MemoryLayout<Integer>.size {
             result <<= 8
             result |= Integer(iterator.next()!)
         }
@@ -272,12 +286,22 @@ struct Unxip {
                 let decompressedSize = _decompressedSize
 
                 if compressedSize == chunkSize {
-                    return Chunk(buffer: UnsafeBufferPointer(rebasing: remaining[fromOffset: 0, size: Int(compressedSize)]), owned: false)
+                    return Chunk(
+                        buffer: UnsafeBufferPointer(rebasing: remaining[fromOffset: 0, size: Int(compressedSize)]),
+                        owned: false
+                    )
                 } else {
                     let magic = [0xfd] + "7zX".utf8
                     precondition(remaining.prefix(magic.count).elementsEqual(magic))
                     let buffer = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: Int(decompressedSize))
-                    precondition(compression_decode_buffer(buffer.baseAddress!, buffer.count, UnsafeBufferPointer(rebasing: remaining).baseAddress!, Int(compressedSize), nil, COMPRESSION_LZMA) == decompressedSize)
+                    precondition(compression_decode_buffer(
+                        buffer.baseAddress!,
+                        buffer.count,
+                        UnsafeBufferPointer(rebasing: remaining).baseAddress!,
+                        Int(compressedSize),
+                        nil,
+                        COMPRESSION_LZMA
+                    ) == decompressedSize)
                     return Chunk(buffer: UnsafeBufferPointer(buffer), owned: true)
                 }
             }
@@ -287,7 +311,9 @@ struct Unxip {
         return chunkStream
     }
 
-    func files<ChunkStream: AsyncSequence>(in chunkStream: ChunkStream) -> AsyncStream<File> where ChunkStream.Element == Chunk {
+    func files<ChunkStream: AsyncSequence>(in chunkStream: ChunkStream) -> AsyncStream<File>
+        where ChunkStream.Element == Chunk
+    {
         AsyncStream(bufferingPolicy: .bufferingOldest(ProcessInfo.processInfo.activeProcessorCount)) { continuation in
             Task {
                 var iterator = chunkStream.makeAsyncIterator()
@@ -318,11 +344,11 @@ struct Unxip {
                     let dev = readOctal(from: await read(size: 6))
                     let ino = readOctal(from: await read(size: 6))
                     let mode = readOctal(from: await read(size: 6))
-                    let _ = await read(size: 6)  // uid
-                    let _ = await read(size: 6)  // gid
-                    let _ = await read(size: 6)  // nlink
-                    let _ = await read(size: 6)  // rdev
-                    let _ = await read(size: 11)  // mtime
+                    let _ = await read(size: 6) // uid
+                    let _ = await read(size: 6) // gid
+                    let _ = await read(size: 6) // nlink
+                    let _ = await read(size: 6) // rdev
+                    let _ = await read(size: 11) // mtime
                     let namesize = readOctal(from: await read(size: 6))
                     var filesize = readOctal(from: await read(size: 11))
                     let name = String(cString: await read(size: namesize))
@@ -352,7 +378,8 @@ struct Unxip {
     }
 
     func parseContent(_ content: UnsafeBufferPointer<UInt8>) async {
-        var taskStream = ConcurrentStream<Void>(batchSize: 64)  // Worst case, should allow for files up to 64 * 16MB = 1GB
+        var taskStream =
+            ConcurrentStream<Void>(batchSize: 64) // Worst case, should allow for files up to 64 * 16MB = 1GB
         var hardlinks = [File.Identifier: (String, Task<Void, Never>)]()
         var directories = [Substring: Task<Void, Never>]()
         for await file in files(in: chunks(from: content).results) {
@@ -365,7 +392,7 @@ struct Unxip {
 
             // The assumption is that all directories are provided without trailing slashes
             func parentDirectory<S: StringProtocol>(of path: S) -> S.SubSequence {
-                return path[..<path.lastIndex(of: "/")!]
+                path[..<path.lastIndex(of: "/")!]
             }
 
             // https://bugs.swift.org/browse/SR-15816
@@ -399,7 +426,13 @@ struct Unxip {
                 let task = parentDirectoryTask(for: file)
                 assert(task != nil, file.name)
                 _ = taskStream.addRunningTask {
-                    warn(symlink(String(data: Data(file.data.map(Array.init).reduce([], +)), encoding: .utf8), file.name), "symlinking")
+                    warn(
+                        symlink(
+                            String(data: Data(file.data.map(Array.init).reduce([], +)), encoding: .utf8),
+                            file.name
+                        ),
+                        "symlinking"
+                    )
                     setStickyBit(on: file)
                 }
             case C_ISDIR:
@@ -435,7 +468,7 @@ struct Unxip {
                         }
 
                         // pwritev requires the vector count to be positive
-                        if file.data.count == 0 {
+                        if file.data.isEmpty {
                             return
                         }
 
@@ -461,22 +494,28 @@ struct Unxip {
         }
 
         // Run through any stragglers
-        for await _ in taskStream.results {
-        }
+        for await _ in taskStream.results {}
     }
 
     func locateContent(in file: UnsafeBufferPointer<UInt8>) -> UnsafeBufferPointer<UInt8> {
-        precondition(file.starts(with: "xar!".utf8))  // magic
+        precondition(file.starts(with: "xar!".utf8)) // magic
         var header = file[4...]
         let headerSize = read(UInt16.self, from: &header)
-        precondition(read(UInt16.self, from: &header) == 1)  // version
+        precondition(read(UInt16.self, from: &header) == 1) // version
         let tocCompressedSize = read(UInt64.self, from: &header)
         let tocDecompressedSize = read(UInt64.self, from: &header)
-        _ = read(UInt32.self, from: &header)  // checksum
+        _ = read(UInt32.self, from: &header) // checksum
 
         let toc = [UInt8](unsafeUninitializedCapacity: Int(tocDecompressedSize)) { buffer, count in
-            let zlibSkip = 2  // Apple's decoder doesn't want to see CMF/FLG (see RFC 1950)
-            count = compression_decode_buffer(buffer.baseAddress!, Int(tocDecompressedSize), file.baseAddress! + Int(headerSize) + zlibSkip, Int(tocCompressedSize) - zlibSkip, nil, COMPRESSION_ZLIB)
+            let zlibSkip = 2 // Apple's decoder doesn't want to see CMF/FLG (see RFC 1950)
+            count = compression_decode_buffer(
+                buffer.baseAddress!,
+                Int(tocDecompressedSize),
+                file.baseAddress! + Int(headerSize) + zlibSkip,
+                Int(tocCompressedSize) - zlibSkip,
+                nil,
+                COMPRESSION_ZLIB
+            )
             precondition(count == Int(tocDecompressedSize))
         }
 
@@ -497,7 +536,11 @@ struct Unxip {
         let handle = try FileHandle(forReadingFrom: options.input)
         try handle.seekToEnd()
         let length = Int(try handle.offset())
-        let file = UnsafeBufferPointer(start: mmap(nil, length, PROT_READ, MAP_PRIVATE, handle.fileDescriptor, 0).bindMemory(to: UInt8.self, capacity: length), count: length)
+        let file = UnsafeBufferPointer(
+            start: mmap(nil, length, PROT_READ, MAP_PRIVATE, handle.fileDescriptor, 0)
+                .bindMemory(to: UInt8.self, capacity: length),
+            count: length
+        )
         precondition(UnsafeMutableRawPointer(mutating: file.baseAddress) != MAP_FAILED)
         defer {
             munmap(UnsafeMutableRawPointer(mutating: file.baseAddress), length)
@@ -505,7 +548,10 @@ struct Unxip {
 
         if let output = options.output {
             guard chdir(output.path) == 0 else {
-                fputs("Failed to access output directory at \(output.path): \(String(cString: strerror(errno)))", stderr)
+                fputs(
+                    "Failed to access output directory at \(output.path): \(String(cString: strerror(errno)))",
+                    stderr
+                )
                 exit(EXIT_FAILURE)
             }
         }

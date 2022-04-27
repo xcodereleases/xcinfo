@@ -1,5 +1,5 @@
 //
-//  Copyright © 2019 xcodereleases.com
+//  Copyright © 2022 xcodereleases.com
 //  MIT license - see LICENSE.md
 //
 
@@ -18,9 +18,11 @@ struct WindowSize {
             return nil
         }
 
-        return WindowSize(rows: Int(w.ws_row),
-                          columns: Int(w.ws_col),
-                          pixelWidth: Int(w.ws_xpixel),
-                          pixelHeight: Int(w.ws_ypixel))
+        return WindowSize(
+            rows: Int(w.ws_row),
+            columns: Int(w.ws_col),
+            pixelWidth: Int(w.ws_xpixel),
+            pixelHeight: Int(w.ws_ypixel)
+        )
     }()
 }

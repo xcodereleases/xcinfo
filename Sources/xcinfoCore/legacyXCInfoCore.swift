@@ -1,14 +1,14 @@
 //
-//  Copyright © 2019 xcodereleases.com
+//  Copyright © 2022 xcodereleases.com
 //  MIT license - see LICENSE.md
 //
 
 import Cocoa
-import Rainbow
 import Combine
 import Foundation
 import OlympUs
 import Prompt
+import Rainbow
 import XCIFoundation
 import XCModel
 
@@ -105,7 +105,8 @@ public class legacyXCInfoCore {
 
     private func filter(xcode: Xcode, fullVersion: String?, betaVersion: Int?, version: String) -> Bool {
         if let betaVersion = betaVersion {
-            let versionNumberHaveSamePrefix = xcode.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true
+            let versionNumberHaveSamePrefix = xcode.version.number?.lowercased()
+                .hasPrefix(fullVersion ?? version) == true
             let betaVersionsAreSame: Bool = {
                 guard case let .beta(version) = xcode.version.release else { return false }
                 return version == betaVersion
@@ -139,7 +140,8 @@ public class legacyXCInfoCore {
                     exit(EXIT_FAILURE)
                 }
 
-                let xcodes: [XcodeApplication] = self.findInstalledXcodes(for: version, knownVersions: knownVersions).sorted(by: >)
+                let xcodes: [XcodeApplication] = self.findInstalledXcodes(for: version, knownVersions: knownVersions)
+                    .sorted(by: >)
 
                 if xcodes.isEmpty {
                     self.logger.error("No matching Xcode version found.")
@@ -149,10 +151,15 @@ public class legacyXCInfoCore {
                     if xcodes.count > 1 {
                         let listFormatter = ListFormatter()
                         listFormatter.locale = Locale(identifier: "en_US")
-                        self.logger.verbose("Found: \(listFormatter.string(from: xcodes.map { $0.xcode.description })!)")
+                        self.logger
+                            .verbose("Found: \(listFormatter.string(from: xcodes.map { $0.xcode.description })!)")
 
-                        selected = choose("Please choose the version you want to uninstall: ", type: XcodeApplication.self) { settings in
-                            let longestXcodeNameLength = xcodes.map { $0.xcode.attributedDisplayName }.max(by: { $1.count > $0.count })!.count
+                        selected = choose(
+                            "Please choose the version you want to uninstall: ",
+                            type: XcodeApplication.self
+                        ) { settings in
+                            let longestXcodeNameLength = xcodes.map { $0.xcode.attributedDisplayName }
+                                .max(by: { $1.count > $0.count })!.count
                             for xcodeApp in xcodes {
                                 let attributedName = xcodeApp.xcode.attributedDisplayName
                                 let width = longestXcodeNameLength + attributedName.count - attributedName.raw.count
@@ -168,7 +175,10 @@ public class legacyXCInfoCore {
                     let displayName = selected.xcode.attributedDisplayName
                     if agree("Are you sure you want to uninstall Xcode \(displayName)?") {
                         do {
-                            self.logger.verbose("Uninstalling Xcode \(selected.xcode.description) from \(selected.url.path) ...")
+                            self.logger
+                                .verbose(
+                                    "Uninstalling Xcode \(selected.xcode.description) from \(selected.url.path) ..."
+                                )
                             try FileManager.default.removeItem(at: selected.url)
                             self.logger.success("\(selected.xcode.description) uninstalled!")
                             exit(EXIT_SUCCESS)
@@ -215,21 +225,30 @@ public class legacyXCInfoCore {
                     return $0.releaseDate > referenceDate
                 }).sorted(by: >)
 
-                self.printXcodeVersionList(xcodeVersions: listedVersions.map { $0.attributedDisplayName }, columnWidth: columnWidth)
+                self.printXcodeVersionList(
+                    xcodeVersions: listedVersions.map { $0.attributedDisplayName },
+                    columnWidth: columnWidth
+                )
 
                 let installedVersions = self.installedXcodes(knownVersions: versions).map { $0.xcode }
 
                 if !installedVersions.isEmpty {
                     self.logger.log("\nAlready installed:")
 
-                    self.printXcodeVersionList(xcodeVersions: installedVersions.sorted(by: >).map { $0.attributedDisplayName }, columnWidth: columnWidth)
+                    self.printXcodeVersionList(
+                        xcodeVersions: installedVersions.sorted(by: >).map { $0.attributedDisplayName },
+                        columnWidth: columnWidth
+                    )
                 }
 
                 let notInstallableVersions = allVersions.subtracting(installableVersions)
                 if !notInstallableVersions.isEmpty {
                     self.logger.log("\nNot installable:")
 
-                    self.printXcodeVersionList(xcodeVersions: notInstallableVersions.sorted(by: >).map { $0.description }, columnWidth: columnWidth)
+                    self.printXcodeVersionList(
+                        xcodeVersions: notInstallableVersions.sorted(by: >).map { $0.description },
+                        columnWidth: columnWidth
+                    )
                 }
 
                 exit(EXIT_SUCCESS)
@@ -241,7 +260,8 @@ public class legacyXCInfoCore {
 
     private func printXcodeVersionList(xcodeVersions: [String], columnWidth: Int) {
         if xcodeVersions.count > 10,
-            let windowSize = WindowSize.current {
+           let windowSize = WindowSize.current
+        {
             let cols = Int((Double(windowSize.columns) / Double(columnWidth)).rounded(.down))
             let rows = Int((Double(xcodeVersions.count) / Double(cols)).rounded(.up))
 
@@ -268,7 +288,11 @@ public class legacyXCInfoCore {
                 return self.findXcodes(for: releaseName, knownVersions: knownVersions)
             }
             .sink { xcodeVersions in
-                if let xcodeVersion = self.chooseXcode(xcodeVersions, givenReleaseName: releaseName, prompt: "Please choose the exact version: ") {
+                if let xcodeVersion = self.chooseXcode(
+                    xcodeVersions,
+                    givenReleaseName: releaseName,
+                    prompt: "Please choose the exact version: "
+                ) {
                     self.logger.beginSection("Version info")
                     self.logger.log(xcodeVersion.description)
 
@@ -298,7 +322,8 @@ public class legacyXCInfoCore {
                     }
                     self.logger.beginParagraph("Compilers")
                     if let compilers = xcodeVersion.compilers?.keyed() {
-                        let longestName = compilers.map { "\($0.key) \($0.value[0].number ?? ""):" }.max(by: { $1.count > $0.count })!.count
+                        let longestName = compilers.map { "\($0.key) \($0.value[0].number ?? ""):" }
+                            .max(by: { $1.count > $0.count })!.count
                         for (name, versions) in compilers {
                             let version = versions[0]
                             let compilerName = "\(name) \(version.number ?? ""):"
@@ -331,7 +356,10 @@ public class legacyXCInfoCore {
             if let releaseName = givenReleaseName {
                 logger.log("Found multiple possibilities for the requested version '\(releaseName.cyan)'.")
             } else {
-                logger.log("No version was provided. You can choose between the ten latest or cancel and use an argument.")
+                logger
+                    .log(
+                        "No version was provided. You can choose between the ten latest or cancel and use an argument."
+                    )
             }
 
             let listedXcodeVersions = givenReleaseName == nil ? Array(xcodes.prefix(10)) : xcodes
@@ -344,9 +372,11 @@ public class legacyXCInfoCore {
         }
     }
 
-    public func download(releaseName: String?,
-                         updateVersionList: Bool,
-                         disableSleep: Bool) {
+    public func download(
+        releaseName: String?,
+        updateVersionList: Bool,
+        disableSleep: Bool
+    ) {
         download(releaseName: releaseName, updateVersionList: updateVersionList, disableSleep: disableSleep)
             .sink { [unowned self] completion in
                 if case let .failure(error) = completion {
@@ -355,7 +385,7 @@ public class legacyXCInfoCore {
                 } else {
                     exit(EXIT_SUCCESS)
                 }
-            } receiveValue: { [unowned self] (url, _, _) in
+            } receiveValue: { [unowned self] url, _, _ in
                 logger.success("Successfully downloaded to: \(url.path)")
             }
             .store(in: &disposeBag)
@@ -363,9 +393,11 @@ public class legacyXCInfoCore {
         RunLoop.main.run()
     }
 
-    func download(releaseName: String?,
-                  updateVersionList: Bool,
-                  disableSleep: Bool) -> AnyPublisher<(URL, [Xcode], Xcode?), XCAPIError> {
+    func download(
+        releaseName: String?,
+        updateVersionList: Bool,
+        disableSleep: Bool
+    ) -> AnyPublisher<(URL, [Xcode], Xcode?), XCAPIError> {
         var knownXcodes: [Xcode] = []
         var xcodeVersion: Xcode?
 
@@ -383,7 +415,11 @@ public class legacyXCInfoCore {
                     selectableXcodes = knownXcodes
                     releaseName = nil
                 }
-                xcodeVersion = self.chooseXcode(selectableXcodes, givenReleaseName: releaseName, prompt: "Please choose the version you want to install: ")
+                xcodeVersion = self.chooseXcode(
+                    selectableXcodes,
+                    givenReleaseName: releaseName,
+                    prompt: "Please choose the version you want to install: "
+                )
                 if let xcodeVersion = xcodeVersion, let url = xcodeVersion.links?.download?.url {
                     self.logger.log("Starting installation.")
                     return Just(url)
@@ -406,7 +442,7 @@ public class legacyXCInfoCore {
                 self.logger.beginSection("Downloading")
 
                 func download(url: URL, resumeData: Data? = nil) -> AnyPublisher<URL, XCAPIError> {
-                    return self.downloader.start(url: url, disableSleep: disableSleep, resumeData: resumeData)
+                    self.downloader.start(url: url, disableSleep: disableSleep, resumeData: resumeData)
                         .catch { error -> AnyPublisher<URL, XCAPIError> in
                             guard case let XCAPIError.recoverableDownloadError(url, resumeData) = error else {
                                 return Fail(error: error).eraseToAnyPublisher()
@@ -439,15 +475,17 @@ public class legacyXCInfoCore {
             .eraseToAnyPublisher()
     }
 
-    public func install(releaseName: String?,
-                        updateVersionList: Bool,
-                        disableSleep: Bool,
-                        skipSymlinkCreation: Bool,
-                        skipXcodeSelection: Bool,
-                        shouldDeleteXIP: Bool) {
+    public func install(
+        releaseName: String?,
+        updateVersionList: Bool,
+        disableSleep: Bool,
+        skipSymlinkCreation: Bool,
+        skipXcodeSelection: Bool,
+        shouldDeleteXIP: Bool
+    ) {
         download(releaseName: releaseName, updateVersionList: updateVersionList, disableSleep: disableSleep)
             .mapError { error in
-                return error as Error
+                error as Error
             }
             .flatMap { downloadURL, knownXcodes, xcodeVersion -> AnyPublisher<(URL, [Xcode]), Error> in
                 // unxip
@@ -479,11 +517,13 @@ public class legacyXCInfoCore {
                     self.logger.error("\(error)")
                     exit(EXIT_FAILURE)
                 }
-            }, receiveValue: { (url, knownXcodes) in
-                self.installXcode(from: url,
-                                  knownXcodes: knownXcodes,
-                                  skipSymlinkCreation: skipSymlinkCreation,
-                                  skipXcodeSelection: skipXcodeSelection)
+            }, receiveValue: { url, knownXcodes in
+                self.installXcode(
+                    from: url,
+                    knownXcodes: knownXcodes,
+                    skipSymlinkCreation: skipSymlinkCreation,
+                    skipXcodeSelection: skipXcodeSelection
+                )
             })
             .store(in: &disposeBag)
 
@@ -513,27 +553,40 @@ public class legacyXCInfoCore {
         }
     }
 
-    public func installXcode(from url: URL, skipSymlinkCreation: Bool, skipXcodeSelection: Bool, skipVerification: Bool = false) {
+    public func installXcode(
+        from url: URL,
+        skipSymlinkCreation: Bool,
+        skipXcodeSelection: Bool,
+        skipVerification: Bool = false
+    ) {
         list(updateList: true)
             .sink { xcodes in
-                self.installXcode(from: url,
-                                  knownXcodes: xcodes,
-                                  skipSymlinkCreation: skipSymlinkCreation,
-                                  skipXcodeSelection: skipXcodeSelection,
-                                  skipVerification: skipVerification)
-        }
-        .store(in: &disposeBag)
+                self.installXcode(
+                    from: url,
+                    knownXcodes: xcodes,
+                    skipSymlinkCreation: skipSymlinkCreation,
+                    skipXcodeSelection: skipXcodeSelection,
+                    skipVerification: skipVerification
+                )
+            }
+            .store(in: &disposeBag)
 
         RunLoop.main.run()
     }
 
-    private func installXcode(from url: URL, knownXcodes: [Xcode], skipSymlinkCreation: Bool, skipXcodeSelection: Bool, skipVerification: Bool = false) {
-        self.logger.beginSection("Installing")
+    private func installXcode(
+        from url: URL,
+        knownXcodes: [Xcode],
+        skipSymlinkCreation: Bool,
+        skipXcodeSelection: Bool,
+        skipVerification: Bool = false
+    ) {
+        logger.beginSection("Installing")
 
         if !skipVerification {
-            let xcodeVerificationResult = self.verifyXcode(at: url)
+            let xcodeVerificationResult = verifyXcode(at: url)
             guard xcodeVerificationResult == EXIT_SUCCESS else {
-                self.logger.error("Xcode verification failed.")
+                logger.error("Xcode verification failed.")
                 try? FileManager.default.removeItem(at: url)
                 fail(statusCode: xcodeVerificationResult)
             }
@@ -544,7 +597,7 @@ public class legacyXCInfoCore {
         var possiblePassword: String?
         repeat {
             passwordAttempts += 1
-            self.logger.log("Prompting for password. Attempt \(passwordAttempts)!")
+            logger.log("Prompting for password. Attempt \(passwordAttempts)!")
             let prompt: String = {
                 if passwordAttempts == 1 {
                     return "Please enter your password:"
@@ -594,7 +647,8 @@ public class legacyXCInfoCore {
 
     @discardableResult public func selectXcode(at url: URL, password: String) -> Int {
         logger.log("Selecting Xcode...")
-        let result = Shell.executePrivileged(command: "xcode-select", password: password, args: ["-s", url.path]).exitStatus
+        let result = Shell.executePrivileged(command: "xcode-select", password: password, args: ["-s", url.path])
+            .exitStatus
         logger.log("Selecting Xcode \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return Int(result)
     }
@@ -611,7 +665,10 @@ public class legacyXCInfoCore {
 
             let installed = installedXcodes(knownVersions: knownXcodes)
             if let xcodeApp = installed.first(where: { $0.url == symlinkURL }) {
-                logger.verbose("\(symlinkURL.path) already exists. Moving it to /Applications/\(xcodeApp.xcode.filename).", onSameLine: true)
+                logger.verbose(
+                    "\(symlinkURL.path) already exists. Moving it to /Applications/\(xcodeApp.xcode.filename).",
+                    onSameLine: true
+                )
                 let destination = URL(fileURLWithPath: "/Applications/\(xcodeApp.xcode.filename)")
                 try? fileManager.moveItem(at: symlinkURL, to: destination)
             }
@@ -631,14 +688,22 @@ public class legacyXCInfoCore {
     @discardableResult public func enableDeveloperMode(password: String) -> Int {
         logger.log("Enabling Developer Mode...")
 
-        let result1 = Shell.executePrivileged(command: "/usr/sbin/DevToolsSecurity", password: password, args: ["-enable"]).exitStatus
+        let result1 = Shell.executePrivileged(
+            command: "/usr/sbin/DevToolsSecurity",
+            password: password,
+            args: ["-enable"]
+        ).exitStatus
 
         guard result1 == EXIT_SUCCESS else {
             logger.log("Enabling Developer Mode ✗")
             return Int(result1)
         }
 
-        let result2 = Shell.executePrivileged(command: "/usr/sbin/dseditgroup", password: password, args: "-o edit -t group -a staff _developer".components(separatedBy: " ")).exitStatus
+        let result2 = Shell.executePrivileged(
+            command: "/usr/sbin/dseditgroup",
+            password: password,
+            args: "-o edit -t group -a staff _developer".components(separatedBy: " ")
+        ).exitStatus
 
         logger.log("Enabling Developer Mode \(result2 == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return Int(result2)
@@ -646,14 +711,22 @@ public class legacyXCInfoCore {
 
     @discardableResult public func approveLicense(password: String, url: URL) -> Int {
         logger.log("Approving License...")
-        let result = Shell.executePrivileged(command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild", password: password, args: ["-license", "accept"]).exitStatus
+        let result = Shell.executePrivileged(
+            command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild",
+            password: password,
+            args: ["-license", "accept"]
+        ).exitStatus
         logger.log("Approving License \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return Int(result)
     }
 
     @discardableResult public func installComponents(password: String, url: URL) -> Int {
         logger.log("Install additional components...")
-        let result = Shell.executePrivileged(command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild", password: password, args: ["-runFirstLaunch"]).exitStatus
+        let result = Shell.executePrivileged(
+            command: "\(url.path)/Contents/Developer/usr/bin/xcodebuild",
+            password: password,
+            args: ["-runFirstLaunch"]
+        ).exitStatus
         logger.log("Install additional components \(result == EXIT_SUCCESS ? "✓" : "✗")", onSameLine: true)
         return Int(result)
     }
@@ -672,7 +745,10 @@ public class legacyXCInfoCore {
                 logger.log("No Apple ID credentials were stored.")
             }
         } catch {
-            logger.error("Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcinfo.appleid'.")
+            logger
+                .error(
+                    "Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcinfo.appleid'."
+                )
         }
         do {
             let items = try KeychainPasswordItem.passwordItems(forService: "xcinfo.session")
@@ -685,7 +761,10 @@ public class legacyXCInfoCore {
                 logger.log("No Apple developer portal session info was stored.")
             }
         } catch {
-            logger.error("Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcinfo.session'.")
+            logger
+                .error(
+                    "Error deleting Keychain entries. Please open Keychain Access.app and remove items named 'xcinfo.session'."
+                )
         }
 
         session.configuration.httpCookieStorage?.removeCookies(since: Date.distantPast)
@@ -730,7 +809,8 @@ public class legacyXCInfoCore {
             let url = URL(fileURLWithPath: String(path))
             let versionURL = url.appendingPathComponent("Contents/version.plist")
             if let plistBuild = NSDictionary(contentsOfFile: versionURL.path)?["ProductBuildVersion"] as? String,
-                let release = knownVersions.first(where: { $0.version.build == plistBuild }) {
+               let release = knownVersions.first(where: { $0.version.build == plistBuild })
+            {
                 return XcodeApplication(url: url, xcode: release)
             } else {
                 return nil

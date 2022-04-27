@@ -1,5 +1,5 @@
 //
-//  Copyright © 2019 xcodereleases.com
+//  Copyright © 2022 xcodereleases.com
 //  MIT license - see LICENSE.md
 //
 
@@ -49,8 +49,14 @@ class FileDownload: NSObject, URLSessionDownloadDelegate {
         Measurement<UnitInformationStorage>(value: downloadSpeedValues.averageSpeed(), unit: .bytes)
     }
 
-    init(task: URLSessionDownloadTask, delegateProxy: URLSessionDelegateProxy, logger: Logger, disableSleep: Bool = false) {
-        name = task.originalRequest?.url?.absoluteString ?? task.currentRequest?.url?.absoluteString ?? "<unnnamed download>"
+    init(
+        task: URLSessionDownloadTask,
+        delegateProxy: URLSessionDelegateProxy,
+        logger: Logger,
+        disableSleep: Bool = false
+    ) {
+        name = task.originalRequest?.url?.absoluteString ?? task.currentRequest?.url?
+            .absoluteString ?? "<unnnamed download>"
         self.task = task
         self.logger = logger
         super.init()
@@ -94,7 +100,13 @@ class FileDownload: NSObject, URLSessionDownloadDelegate {
         }
     }
 
-    func urlSession(_: URLSession, downloadTask _: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+    func urlSession(
+        _: URLSession,
+        downloadTask _: URLSessionDownloadTask,
+        didWriteData bytesWritten: Int64,
+        totalBytesWritten: Int64,
+        totalBytesExpectedToWrite: Int64
+    ) {
         guard totalBytesExpectedToWrite > 0 else { return }
         progress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
         totalBytesExpectedToWriteValue = Double(totalBytesExpectedToWrite)
@@ -116,7 +128,7 @@ class FileDownload: NSObject, URLSessionDownloadDelegate {
             return
         }
 
-        self.logger.error(error.localizedDescription)
+        logger.error(error.localizedDescription)
         resumeData = error.downloadTaskResumeData
         isCancelled = error.code == .cancelled
 

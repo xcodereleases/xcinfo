@@ -1,13 +1,13 @@
 //
-//  Copyright © 2019 xcodereleases.com
+//  Copyright © 2022 xcodereleases.com
 //  MIT license - see LICENSE.md
 //
 
 import Combine
 import Foundation
+import Rainbow
 import XCIFoundation
 import XCUnxip
-import Rainbow
 
 class Extractor {
     struct ExtractionError: LocalizedError {
@@ -37,7 +37,7 @@ class Extractor {
     private var container: PKSignedContainer!
 
     init(forReadingFromContainerAt url: URL, destination: URL, appFilename: String?, logger: Logger) {
-        self.source = url
+        source = url
         self.destination = destination
         self.appFilename = appFilename
         self.logger = logger
@@ -52,9 +52,9 @@ class Extractor {
         try FileManager.default.ensureFolderExists(target)
 
         try await Unxip(options: .init(input: source, output: target)).extract()
-        self.logger.success("Done extracting: \(target.path)")
+        logger.success("Done extracting: \(target.path)")
 
-        if let applicationURL = self.moveToDestinationFolder(tempFolder: target) {
+        if let applicationURL = moveToDestinationFolder(tempFolder: target) {
             return applicationURL
         } else {
             throw ExtractionError("Application could not be moved to \(destination.path).")

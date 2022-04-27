@@ -1,5 +1,5 @@
 //
-//  Copyright © 2019 xcodereleases.com
+//  Copyright © 2022 xcodereleases.com
 //  MIT license - see LICENSE.md
 //
 
@@ -18,7 +18,7 @@ extension Publisher {
             cancellable = sink(
                 receiveCompletion: { completion in
                     switch completion {
-                    case .failure(let error):
+                    case let .failure(error):
                         continuation.resume(throwing: error)
                     case .finished:
                         if !didReceiveValue {
