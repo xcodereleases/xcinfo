@@ -115,6 +115,52 @@ public class Core {
         self.environment = environment
     }
 
+    public func info(version: XcodeVersion, shouldUpdate _: Bool) async throws {
+        let xcode = try await identifyVersion(version, updateVersionList: true)
+
+        environment.logger.beginSection("Version info")
+        environment.logger.log(xcode.description)
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.dateStyle = .long
+
+        let relativeDateFormatter = RelativeDateTimeFormatter()
+        relativeDateFormatter.locale = Locale(identifier: "en_US_POSIX")
+
+        var releaseDateString = "Release date: \(dateFormatter.string(from: xcode.releaseDate))"
+        if let relativeDateString = relativeDateFormatter.string(for: xcode.releaseDate) {
+            releaseDateString += " (\(relativeDateString))"
+        }
+        environment.logger.log(releaseDateString)
+        environment.logger.log("Requires macOS \(xcode.requires)")
+
+        environment.logger.beginParagraph("SDKs")
+
+        if let sdks = xcode.sdks?.keyed() {
+            let longestSDKName = sdks.map { "\($0.key) SDK:" }.max(by: { $1.count > $0.count })!.count
+            for (name, versions) in sdks {
+                let sdkName = "\(name) SDK:"
+                let version = versions[0]
+                environment.logger.log("\(sdkName.paddedWithSpaces(to: longestSDKName)) \(version.build ?? "")")
+            }
+        }
+        environment.logger.beginParagraph("Compilers")
+        if let compilers = xcode.compilers?.keyed() {
+            let longestName = compilers.map { "\($0.key) \($0.value[0].number ?? ""):" }
+                .max(by: { $1.count > $0.count })!.count
+            for (name, versions) in compilers {
+                let version = versions[0]
+                let compilerName = "\(name) \(version.number ?? ""):"
+                environment.logger.log("\(compilerName.paddedWithSpaces(to: longestName)) \(version.build ?? "")")
+            }
+        }
+
+        environment.logger.beginParagraph("Links")
+        environment.logger.log("Download:      " + xcode.links!.download!.url.absoluteString)
+        environment.logger.log("Release Notes: " + xcode.links!.notes!.url.absoluteString)
+    }
+
     public func installedXcodes(shouldUpdate: Bool) async throws {
         let knownXcodes: [Xcode] = try await list(shouldUpdate: shouldUpdate)
         let task = Task {

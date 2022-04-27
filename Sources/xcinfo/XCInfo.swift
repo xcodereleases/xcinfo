@@ -13,14 +13,14 @@ struct XCInfo: AsyncParsableCommand {
         commandName: "xcinfo",
         version: version,
         subcommands: [
-//            Info.self,
-            Install.self,
-            List.self,
-            Download.self,
-            Installed.self,
-            Extract.self,
-            Uninstall.self,
             Cleanup.self,
+            Download.self,
+            Extract.self,
+            Info.self,
+            Install.self,
+            Installed.self,
+            List.self,
+            Uninstall.self
         ]
     )
 }
