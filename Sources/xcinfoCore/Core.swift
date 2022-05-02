@@ -189,9 +189,9 @@ public class Core {
     public func download(
         version: XcodeVersion,
         options: DownloadOptions,
-        updateVersionList _: Bool
+        updateVersionList: Bool
     ) async throws -> (Xcode, URL) {
-        let xcode = try await identifyVersion(version, updateVersionList: true)
+        let xcode = try await identifyVersion(version, updateVersionList: updateVersionList)
 
         guard let url = xcode.links?.download?.url else {
             throw CoreError.invalidDownloadURL
@@ -225,7 +225,7 @@ public class Core {
         let downloadResult: DownloadResult
 
         if let url = options.xipFile {
-            let xcode = try await identifyVersion(options.version, updateVersionList: true)
+            let xcode = try await identifyVersion(options.version, updateVersionList: updateVersionList)
             downloadResult = (xcode, url)
         } else {
             downloadResult = try await download(
