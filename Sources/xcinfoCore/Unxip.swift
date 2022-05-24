@@ -3,6 +3,8 @@
 //  MIT license - see LICENSE.md
 //
 
+// Many thanks to Saagar Jha: https://github.com/saagarjha/unxip
+
 import Compression
 import Foundation
 
