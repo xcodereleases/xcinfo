@@ -26,9 +26,14 @@ extension XCInfo {
         )
         var updateList: Bool = false
 
+			@Option(name: .shortAndLong, help: "Build version to use (if provided).")
+			var build: String?
+
         func run() throws {
             let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
-            core.uninstall(xcodeVersion?.lowercased(), updateVersionList: updateList)
+            core.uninstall(xcodeVersion?.lowercased(),
+													 build: build,
+													 updateVersionList: updateList)
         }
     }
 }

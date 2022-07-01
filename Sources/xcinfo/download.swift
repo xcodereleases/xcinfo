@@ -34,10 +34,18 @@ extension XCInfo {
         )
         var disableSleep: Bool = false
 
+				@Option(name: .shortAndLong, help: "Build version to use (if provided).")
+				var build: String?
+
+				@Option(name: .shortAndLong, help: "Release name to use (if provided).")
+				var release: String?
+
         func run() throws {
             let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
             core.download(
                 releaseName: xcodeVersion.asString(),
+								build: build,
+								release: release,
                 updateVersionList: updateList,
                 disableSleep: disableSleep
             )

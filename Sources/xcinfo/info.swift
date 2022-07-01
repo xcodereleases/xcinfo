@@ -22,6 +22,12 @@ extension XCInfo {
         )
         var xcodeVersion: XcodeVersion?
 
+				@Option(name: .shortAndLong, help: "Build version to use (if provided).")
+				var build: String?
+
+				@Option(name: .shortAndLong, help: "Release name to use (if provided).")
+				var release: String?
+
 //        func validate() throws {
 //            if case let .version(versionString) = xcodeVersion {
 //                let normalizedVersion = versionString
@@ -38,7 +44,7 @@ extension XCInfo {
 
         func run() throws {
             let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
-            core.info(releaseName: xcodeVersion?.asString())
+            core.info(releaseName: xcodeVersion?.asString(), build: build, release: release)
         }
     }
 }

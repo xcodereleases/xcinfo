@@ -54,14 +54,22 @@ extension XCInfo {
         )
         var shouldDeleteXIP: Bool = true
 
+				@Option(name: .shortAndLong, help: "Build version to use (if provided).")
+				var build: String?
+
+				@Option(name: .shortAndLong, help: "Release name to use (if provided).")
+				var release: String?
+
         func run() throws {
             let core = xcinfoCore(verbose: globals.isVerbose, useANSI: globals.useANSI)
             core.install(releaseName: xcodeVersion.asString(),
+												 build: build,
+												 release: release,
                          updateVersionList: updateList,
                          disableSleep: disableSleep,
                          skipSymlinkCreation: skipSymlinkCreation,
                          skipXcodeSelection: skipXcodeSelection,
-                         shouldDeleteXIP: shouldDeleteXIP)
+												 shouldDeleteXIP: shouldDeleteXIP)
         }
     }
 }
