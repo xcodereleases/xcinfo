@@ -61,77 +61,73 @@ public class xcinfoCore {
         }
     }
 
-    private func findXcodes(for version: String?, knownVersions: [Xcode]) -> [Xcode] {
+    private func findXcodes(for version: String?, build: String?, release: String?, knownVersions: [Xcode]) -> [Xcode] {
         var releases = knownVersions
         if let version = version {
             if version == "latest", let latest = releases.first {
                 releases = [latest]
             } else {
-                let (fullVersion, betaVersion) = extractVersionParts(from: version)
                 releases = releases.filter {
-                    filter(xcode: $0, fullVersion: fullVersion, betaVersion: betaVersion, version: version)
+                    filter(xcode: $0, fullVersion: version, build: build, release: release)
                 }
             }
         }
         return releases
     }
 
-    private func findInstalledXcodes(for version: String?, knownVersions: [Xcode]) -> [XcodeApplication] {
+    private func findInstalledXcodes(for version: String?, knownVersions: [Xcode], build: String?) -> [XcodeApplication] {
         var xcodesApplications = installedXcodes(knownVersions: knownVersions)
         if let version = version {
-            let (fullVersion, betaVersion) = extractVersionParts(from: version)
             xcodesApplications = xcodesApplications.filter {
-                filter(xcode: $0.xcode, fullVersion: fullVersion, betaVersion: betaVersion, version: version)
+							filter(xcode: $0.xcode, fullVersion: version, build: build)
             }
         }
         return xcodesApplications
     }
 
-    private func extractVersionParts(from version: String) -> (String?, Int?) {
-        let pattern = #"(\d*.?\d*.?\d*) [b|B]eta ?(\d*)"#
+    private func extractVersionParts(from version: String) -> (String?, Int?, Int?) {
+        let pattern = #"(\d*.?\d*.?\d*)\s+(?:[b|B]eta|[R|r][C|c])\s+?(\d*)"#
         let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive)
         var betaVersion: Int?
+				var rcVersion: Int?
         var fullVersion: String?
         if let match = regex?.firstMatch(in: version, options: [], range: NSRange(version.startIndex..., in: version)) {
             if let versionRange = Range(match.range(at: 1), in: version) {
                 fullVersion = String(version[versionRange])
             }
-            if let betaRange = Range(match.range(at: 2), in: version), let beta = Int(version[betaRange]) {
-                betaVersion = beta
+            if let rcOrbetaRange = Range(match.range(at: 2), in: version), let rcOrBeta = Int(version[rcOrbetaRange]) {
+							if version.contains("RC") { rcVersion = rcOrBeta }
+							else if version.contains("Beta") { betaVersion = rcOrBeta }
             }
         }
-        return (fullVersion, betaVersion)
+        return (fullVersion, rcVersion, betaVersion)
     }
 
-    private func filter(xcode: Xcode, fullVersion: String?, betaVersion: Int?, version: String) -> Bool {
-        if let betaVersion = betaVersion {
-            let versionNumberHaveSamePrefix = xcode.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true
-            let betaVersionsAreSame: Bool = {
-                guard case let .beta(version) = xcode.version.release else { return false }
-                return version == betaVersion
-            }()
-            let areSameVersions = xcode.version.build?.lowercased() == version
+		private func filter(xcode: Xcode, fullVersion: String, build: String? = nil, release: String? = nil) -> Bool {
+			let hasVersionNumber = xcode.version.number?.lowercased().elementsEqual(fullVersion)
+			if let build = build, let release = release, let xcbuild = xcode.version.build {
+				let hasBuildNumber = xcbuild.lowercased().elementsEqual(build.lowercased())
+				let hasRelease = xcode.releaseTitle.lowercased().elementsEqual(release.lowercased())
+				return (hasVersionNumber ?? false) && hasBuildNumber && hasRelease
+			}
 
-            return versionNumberHaveSamePrefix && betaVersionsAreSame || areSameVersions
-        } else {
-            return xcode.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true ||
-                xcode.version.build?.lowercased() == version
-        }
+			if let build = build, let xcbuild = xcode.version.build {
+				let hasBuildNumber = xcbuild.lowercased().elementsEqual(build.lowercased())
+				return (hasVersionNumber ?? false) && hasBuildNumber
+			}
+
+			return (hasVersionNumber ?? false)
     }
 
-    func findXcodes(for version: String?, knownVersions: [Xcode]) -> Future<[Xcode], Never> {
+		func findXcodes(for version: String?, build: String?, release: String?, knownVersions: [Xcode]) -> Future<[Xcode], Never> {
         Future { promise in
-            promise(.success(self.findXcodes(for: version, knownVersions: knownVersions)))
+					promise(.success(self.findXcodes(for: version, build: build, release: release, knownVersions: knownVersions)))
         }
     }
 
-    func findXcodes(for version: String?, knownVersions: [Xcode]) -> Future<[XcodeApplication], Never> {
-        Future { promise in
-            promise(.success(self.findInstalledXcodes(for: version, knownVersions: knownVersions)))
-        }
-    }
-
-    public func uninstall(_ version: String?, updateVersionList: Bool) {
+    public func uninstall(_ version: String?,
+													build: String?,
+													updateVersionList: Bool) {
         list(updateList: updateVersionList)
             .sink { knownVersions in
                 guard !knownVersions.isEmpty else {
@@ -139,7 +135,7 @@ public class xcinfoCore {
                     exit(EXIT_FAILURE)
                 }
 
-                let xcodes: [XcodeApplication] = self.findInstalledXcodes(for: version, knownVersions: knownVersions).sorted(by: >)
+                let xcodes: [XcodeApplication] = self.findInstalledXcodes(for: version, knownVersions: knownVersions, build: build).sorted(by: >)
 
                 if xcodes.isEmpty {
                     self.logger.error("No matching Xcode version found.")
@@ -261,14 +257,16 @@ public class xcinfoCore {
         }
     }
 
-    public func info(releaseName: String?) {
+		public func info(releaseName: String?,
+										 build: String?,
+										 release: String?) {
         list(updateList: true)
             .flatMap { knownVersions -> Future<[Xcode], Never> in
                 self.logger.beginSection("Identifying")
-                return self.findXcodes(for: releaseName, knownVersions: knownVersions)
+                return self.findXcodes(for: releaseName, build: build, release: release, knownVersions: knownVersions)
             }
             .sink { xcodeVersions in
-                if let xcodeVersion = self.chooseXcode(xcodeVersions, givenReleaseName: releaseName, prompt: "Please choose the exact version: ") {
+                if let xcodeVersion = self.chooseXcode(xcodeVersions, givenReleaseName: releaseName, givenBuild: build, givenRelease: release, prompt: "Please choose the exact version: ") {
                     self.logger.beginSection("Version info")
                     self.logger.log(xcodeVersion.description)
 
@@ -319,7 +317,7 @@ public class xcinfoCore {
         RunLoop.main.run()
     }
 
-    private func chooseXcode(_ xcodes: [Xcode], givenReleaseName: String?, prompt: String) -> Xcode? {
+		private func chooseXcode(_ xcodes: [Xcode], givenReleaseName: String?, givenBuild: String? = nil, givenRelease: String? = nil, prompt: String) -> Xcode? {
         switch xcodes.count {
         case 0:
             return nil
@@ -328,7 +326,10 @@ public class xcinfoCore {
             logger.log("Found matching Xcode \(version!.attributedDisplayName).")
             return xcodes.first
         default:
-            if let releaseName = givenReleaseName {
+						if let releaseName = givenReleaseName {
+								if let build = givenBuild, let found = xcodes.filter({ $0.version.build?.lowercased().elementsEqual(build.lowercased()) ?? false }).first {
+										return found
+								}
                 logger.log("Found multiple possibilities for the requested version '\(releaseName.cyan)'.")
             } else {
                 logger.log("No version was provided. You can choose between the ten latest or cancel and use an argument.")
@@ -345,9 +346,11 @@ public class xcinfoCore {
     }
 
     public func download(releaseName: String?,
+												 build: String?,
+												 release: String?,
                          updateVersionList: Bool,
                          disableSleep: Bool) {
-        download(releaseName: releaseName, updateVersionList: updateVersionList, disableSleep: disableSleep)
+				download(releaseName: releaseName, build: build, release: release, updateVersionList: updateVersionList, disableSleep: disableSleep)
             .sink { [unowned self] completion in
                 if case let .failure(error) = completion {
                     logger.error("Error: \(error)")
@@ -364,6 +367,8 @@ public class xcinfoCore {
     }
 
     func download(releaseName: String?,
+									build: String?,
+									release: String?,
                   updateVersionList: Bool,
                   disableSleep: Bool) -> AnyPublisher<(URL, [Xcode], Xcode?), XCAPIError> {
         var knownXcodes: [Xcode] = []
@@ -373,7 +378,7 @@ public class xcinfoCore {
             .flatMap { knownVersions -> Future<[Xcode], Never> in
                 knownXcodes = knownVersions
                 self.logger.beginSection("Identifying")
-                return self.findXcodes(for: releaseName, knownVersions: knownVersions)
+                return self.findXcodes(for: releaseName, build: build, release: release, knownVersions: knownVersions)
             }
             .setFailureType(to: XCAPIError.self)
             .flatMap { xcodes -> AnyPublisher<URL, XCAPIError> in
@@ -383,7 +388,7 @@ public class xcinfoCore {
                     selectableXcodes = knownXcodes
                     releaseName = nil
                 }
-                xcodeVersion = self.chooseXcode(selectableXcodes, givenReleaseName: releaseName, prompt: "Please choose the version you want to install: ")
+								xcodeVersion = self.chooseXcode(selectableXcodes, givenReleaseName: releaseName, givenBuild: build, givenRelease: release, prompt: "Please choose the version you want to install: ")
                 if let xcodeVersion = xcodeVersion, let url = xcodeVersion.links?.download?.url {
                     self.logger.log("Starting installation.")
                     return Just(url)
@@ -440,12 +445,14 @@ public class xcinfoCore {
     }
 
     public func install(releaseName: String?,
+												build: String?,
+												release: String?,
                         updateVersionList: Bool,
                         disableSleep: Bool,
                         skipSymlinkCreation: Bool,
                         skipXcodeSelection: Bool,
-                        shouldDeleteXIP: Bool) {
-        download(releaseName: releaseName, updateVersionList: updateVersionList, disableSleep: disableSleep)
+												shouldDeleteXIP: Bool) {
+				download(releaseName: releaseName, build: build, release: release, updateVersionList: updateVersionList, disableSleep: disableSleep)
             .flatMap { (downloadURL, knownXcodes, xcodeVersion) -> AnyPublisher<(URL, [Xcode]), XCAPIError> in
                 // unxip
                 guard
