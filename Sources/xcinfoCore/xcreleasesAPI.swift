@@ -46,6 +46,23 @@ extension Xcode: CustomStringConvertible, CustomDebugStringConvertible {
         return components.joined(separator: " ")
     }
 
+		var releaseTitle: String {
+				switch version.release {
+						case .gm:
+								return "GM"
+						case .gmSeed(let gmSeed):
+								return "GM Seed \(gmSeed)"
+						case .rc(let rc):
+								return "RC \(rc)"
+						case .beta(let beta):
+								return "Beta \(beta)"
+						case .dp(let dp):
+								return "DP \(dp)"
+						case .release:
+								return "Release"
+				}
+		}
+
     private var namedVersion: String {
         var components: [String] = []
         if let number = version.number {
