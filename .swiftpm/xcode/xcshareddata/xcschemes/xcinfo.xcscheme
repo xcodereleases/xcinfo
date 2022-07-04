@@ -205,7 +205,23 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "&quot;15&quot;"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "&quot;13.2&quot;"
             isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-b &quot;13C90&quot;"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-r &quot;Release&quot;"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-r &quot;RC 1&quot;"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--xip-path /Users/trispo/Downloads/Xcode_13.3.xip"
@@ -237,7 +253,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--verbose"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-h"
@@ -245,7 +261,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--no-ansi"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "test"

@@ -62,13 +62,17 @@ public class Core {
     }
 
     public struct DownloadOptions {
-        public init(destination: URL, disableSleep: Bool) {
+        public init(destination: URL,
+										buildRelease: BuildReleaseOptions,
+										disableSleep: Bool) {
             self.destination = destination
+						self.buildRelease = buildRelease
             self.disableSleep = disableSleep
         }
 
         public var destination: URL
         public var disableSleep: Bool
+				public var buildRelease: BuildReleaseOptions
     }
 
     public struct ExtractionOptions {
@@ -80,6 +84,16 @@ public class Core {
         public var destination: URL
         public var useExperimentalUnxip: Bool
     }
+
+		public struct BuildReleaseOptions {
+				public let buildNo: String?
+				public let releaseType: String?
+
+				public init(buildNo: String?, releaseType: String?) {
+						self.buildNo = buildNo
+						self.releaseType = releaseType
+				}
+		}
 
     public struct InstallationOptions {
         public init(
@@ -115,8 +129,8 @@ public class Core {
         self.environment = environment
     }
 
-    public func info(version: XcodeVersion, shouldUpdate _: Bool) async throws {
-        let xcode = try await identifyVersion(version, updateVersionList: true)
+    public func info(version: XcodeVersion, shouldUpdate _: Bool, buildRelease: BuildReleaseOptions) async throws {
+			let xcode = try await identifyVersion(version, buildRelease: buildRelease, updateVersionList: true)
 
         environment.logger.beginSection("Version info")
         environment.logger.log(xcode.description)
@@ -191,7 +205,7 @@ public class Core {
         options: DownloadOptions,
         updateVersionList: Bool
     ) async throws -> (Xcode, URL) {
-        let xcode = try await identifyVersion(version, updateVersionList: updateVersionList)
+			let xcode = try await identifyVersion(version, buildRelease: options.buildRelease, updateVersionList: updateVersionList)
 
         guard let url = xcode.links?.download?.url else {
             throw CoreError.invalidDownloadURL
@@ -225,7 +239,9 @@ public class Core {
         let downloadResult: DownloadResult
 
         if let url = options.xipFile {
-            let xcode = try await identifyVersion(options.version, updateVersionList: updateVersionList)
+					let xcode = try await identifyVersion(options.version,
+																								buildRelease: options.downloadOptions.buildRelease,
+																								updateVersionList: updateVersionList)
             downloadResult = (xcode, url)
         } else {
             downloadResult = try await download(
@@ -252,13 +268,13 @@ public class Core {
         try await installXcode(app, options: options)
     }
 
-    public func uninstall(_ version: String?, updateVersionList: Bool) async throws {
+		public func uninstall(_ version: String?, buildRelease: BuildReleaseOptions, updateVersionList: Bool) async throws {
         let knownVersions: [Xcode] = try await list(shouldUpdate: updateVersionList)
         guard !knownVersions.isEmpty else {
             throw CoreError.uninstallationFailed("No Xcode releases found.")
         }
 
-        let xcodes: [XcodeApplication] = findInstalledXcodes(for: version, knownVersions: knownVersions).sorted(by: >)
+        let xcodes: [XcodeApplication] = findInstalledXcodes(for: version, buildRelease: buildRelease, knownVersions: knownVersions).sorted(by: >)
 
         if xcodes.isEmpty {
             throw CoreError.uninstallationFailed("No matching Xcode version found.")
@@ -357,9 +373,9 @@ public class Core {
 }
 
 extension Core {
-    private func identifyVersion(_ version: XcodeVersion, updateVersionList: Bool) async throws -> Xcode {
+		private func identifyVersion(_ version: XcodeVersion, buildRelease: BuildReleaseOptions, updateVersionList: Bool) async throws -> Xcode {
         environment.logger.beginSection("Identifying")
-        let availableXcodes = try await findXcodes(for: version, shouldUpdate: updateVersionList)
+				let availableXcodes = try await findXcodes(for: version, buildRelease: buildRelease, shouldUpdate: updateVersionList)
 
         guard
             let xcode = chooseXcode(
@@ -566,28 +582,26 @@ extension Core {
         try FileManager.default.removeItem(at: url)
     }
 
-    private func findXcodes(for version: XcodeVersion, shouldUpdate: Bool) async throws -> [Xcode] {
+    private func findXcodes(for version: XcodeVersion, buildRelease: BuildReleaseOptions, shouldUpdate: Bool) async throws -> [Xcode] {
         let knownXcodes: [Xcode] = try await list(shouldUpdate: shouldUpdate)
 
         guard !knownXcodes.isEmpty else { return [] }
 
         switch version {
         case let .version(version):
-            let (fullVersion, betaVersion) = extractVersionParts(from: version)
             return knownXcodes.filter {
-                filter(xcode: $0, fullVersion: fullVersion, betaVersion: betaVersion, version: version)
+							filter(xcode: $0, fullVersion: version, buildRelease: buildRelease)
             }
         case .latest:
             return [knownXcodes[0]]
         }
     }
 
-    private func findInstalledXcodes(for version: String?, knownVersions: [Xcode]) -> [XcodeApplication] {
+    private func findInstalledXcodes(for version: String?, buildRelease: BuildReleaseOptions, knownVersions: [Xcode]) -> [XcodeApplication] {
         var xcodesApplications = installedXcodes(knownVersions: knownVersions)
         if let version = version {
-            let (fullVersion, betaVersion) = extractVersionParts(from: version)
             xcodesApplications = xcodesApplications.filter {
-                filter(xcode: $0.xcode, fullVersion: fullVersion, betaVersion: betaVersion, version: version)
+                filter(xcode: $0.xcode, fullVersion: version, buildRelease: buildRelease)
             }
         }
         return xcodesApplications
@@ -609,21 +623,22 @@ extension Core {
         return (fullVersion, betaVersion)
     }
 
-    private func filter(xcode: Xcode, fullVersion: String?, betaVersion: Int?, version: String) -> Bool {
-        if let betaVersion = betaVersion {
-            let versionNumberHaveSamePrefix = xcode.version.number?.lowercased()
-                .hasPrefix(fullVersion ?? version) == true
-            let betaVersionsAreSame: Bool = {
-                guard case let .beta(version) = xcode.version.release else { return false }
-                return version == betaVersion
-            }()
-            let areSameVersions = xcode.version.build?.lowercased() == version
+    private func filter(xcode: Xcode, fullVersion: String, buildRelease: BuildReleaseOptions) -> Bool {
+				let build = buildRelease.buildNo
+				let release = buildRelease.releaseType
+				let hasVersionNumber = xcode.version.number?.lowercased().elementsEqual(fullVersion)
+				if let build = build, let release = release, let xcbuild = xcode.version.build {
+					let hasBuildNumber = xcbuild.lowercased().elementsEqual(build.lowercased())
+					let hasRelease = xcode.releaseTitle.lowercased().elementsEqual(release.lowercased())
+					return (hasVersionNumber ?? false) && hasBuildNumber && hasRelease
+				}
 
-            return versionNumberHaveSamePrefix && betaVersionsAreSame || areSameVersions
-        } else {
-            return xcode.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true ||
-                xcode.version.build?.lowercased() == version
-        }
+				if let build = build, let xcbuild = xcode.version.build {
+					let hasBuildNumber = xcbuild.lowercased().elementsEqual(build.lowercased())
+					return (hasVersionNumber ?? false) && hasBuildNumber
+				}
+
+				return (hasVersionNumber ?? false)
     }
 
     private func chooseXcode(version: XcodeVersion, from xcodes: [Xcode], prompt: String) -> Xcode? {
