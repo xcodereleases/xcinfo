@@ -44,6 +44,14 @@ struct ListOptions: ParsableArguments {
     var updateList = true
 }
 
+struct BuildReleaseOptions: ParsableArguments {
+		@Option(name: .shortAndLong, help: "Build version to use (if provided).")
+		var build: String?
+
+		@Option(name: .shortAndLong, help: "Release name to use (if provided).")
+		var release: String?
+}
+
 struct VersionOptions: ParsableArguments {
     @Argument(
         help: "A version number of an Xcode version or `latest`.",
@@ -66,6 +74,9 @@ struct DownloadOptions: ParsableArguments {
         help: "Let the system sleep during execution."
     )
     var disableSleep: Bool = false
+
+		@OptionGroup
+		var buildReleaseOptions: BuildReleaseOptions
 }
 
 struct ExtractionOptions: ParsableArguments {

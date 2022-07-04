@@ -20,6 +20,9 @@ extension XCInfo {
         @OptionGroup
         var listOptions: ListOptions
 
+				@OptionGroup
+				var buildReleaseOptions: BuildReleaseOptions
+
         @OptionGroup()
         var globals: DefaultOptions
 
@@ -28,7 +31,9 @@ extension XCInfo {
             let environment = Environment.live(isVerboseLoggingEnabled: globals.isVerbose)
             let core = Core(environment: environment)
             do {
-                try await core.info(version: versionOption.xcodeVersion, shouldUpdate: listOptions.updateList)
+                try await core.info(version: versionOption.xcodeVersion,
+																		shouldUpdate: listOptions.updateList,
+																		buildRelease: .init(buildNo: buildReleaseOptions.build, releaseType: buildReleaseOptions.release))
             } catch {
                 environment.logger.error(error.localizedDescription)
                 throw ExitCode.failure

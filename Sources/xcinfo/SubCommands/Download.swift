@@ -46,6 +46,9 @@ extension XCInfo {
 
 extension DownloadOptions {
     var options: Core.DownloadOptions {
-        .init(destination: downloadDirectory, disableSleep: disableSleep)
+        .init(destination: downloadDirectory,
+							buildRelease: .init(buildNo: buildReleaseOptions.build,
+																	releaseType: buildReleaseOptions.release),
+							disableSleep: disableSleep)
     }
 }

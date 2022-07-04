@@ -25,12 +25,18 @@ extension XCInfo {
         @OptionGroup
         var listOptions: ListOptions
 
+				@OptionGroup
+				var buildReleaseOptions: BuildReleaseOptions
+
         func run() async throws {
             Rainbow.enabled = globals.useANSI
             let environment = Environment.live(isVerboseLoggingEnabled: globals.isVerbose)
             let core = Core(environment: environment)
             do {
-                try await core.uninstall(xcodeVersion?.lowercased(), updateVersionList: listOptions.updateList)
+							try await core.uninstall(xcodeVersion?.lowercased(),
+																			 buildRelease: .init(buildNo: buildReleaseOptions.build,
+																													 releaseType: buildReleaseOptions.release),
+																			 updateVersionList: listOptions.updateList)
             } catch let error as CoreError {
                 environment.logger.error(error.localizedDescription)
                 throw ExitCode.failure
