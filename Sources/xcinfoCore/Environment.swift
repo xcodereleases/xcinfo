@@ -60,8 +60,17 @@ private let sessionDelegateProxy = URLSessionDelegateProxy()
 extension FileManager {
     var cachesDirectory: URL {
         let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-        let directory = cachesDirectory.appendingPathComponent("xcinfo")
-        try! FileManager.default.ensureFolderExists(directory)
+        var directory = cachesDirectory.appendingPathComponent("xcinfo")
+        do {
+            try FileManager.default.ensureFolderExists(directory)
+        } catch {
+            directory = URL(filePath: "~/.xcinfo")
+            if let _ = try? FileManager.default.ensureFolderExists(directory) {
+                return directory
+            } else {
+                fail(statusCode: 1, errorMessage: "Could create caches directory.")
+            }
+        }
         return directory
     }
 
