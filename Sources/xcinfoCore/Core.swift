@@ -121,23 +121,16 @@ public class Core {
         environment.logger.beginSection("Version info")
         environment.logger.log(xcode.description)
 
-        let dateFormatter = DateFormatter()
-        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-        dateFormatter.dateStyle = .long
+        let locale = Locale(identifier: "en_US_POSIX")
 
-        let relativeDateFormatter = RelativeDateTimeFormatter()
-        relativeDateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        var releaseDateString = "Release date: \(xcode.releaseDate.formatted(Date.FormatStyle().year().month(.wide).day().locale(locale)))"
+        releaseDateString += " (\(xcode.releaseDate.formatted(.relative(presentation: .named, unitsStyle: .wide).locale(locale))))"
 
-        var releaseDateString = "Release date: \(dateFormatter.string(from: xcode.releaseDate))"
-        if let relativeDateString = relativeDateFormatter.string(for: xcode.releaseDate) {
-            releaseDateString += " (\(relativeDateString))"
-        }
         environment.logger.log(releaseDateString)
         environment.logger.log("Requires macOS \(xcode.requires)")
 
-        environment.logger.beginParagraph("SDKs")
-
         if let sdks = xcode.sdks?.keyed() {
+            environment.logger.beginParagraph("SDKs")
             let longestSDKName = sdks.map { "\($0.key) SDK:" }.max(by: { $1.count > $0.count })!.count
             for (name, versions) in sdks {
                 let sdkName = "\(name) SDK:"
@@ -145,8 +138,8 @@ public class Core {
                 environment.logger.log("\(sdkName.paddedWithSpaces(to: longestSDKName)) \(version.build ?? "")")
             }
         }
-        environment.logger.beginParagraph("Compilers")
         if let compilers = xcode.compilers?.keyed() {
+            environment.logger.beginParagraph("Compilers")
             let longestName = compilers.map { "\($0.key) \($0.value[0].number ?? ""):" }
                 .max(by: { $1.count > $0.count })!.count
             for (name, versions) in compilers {
@@ -156,9 +149,17 @@ public class Core {
             }
         }
 
+        let downloadLink = xcode.links?.download?.url.absoluteString
+        let notesLink = xcode.links?.notes?.url.absoluteString
+        guard ![downloadLink, notesLink].compactMap({ $0 }).isEmpty else { return }
+
         environment.logger.beginParagraph("Links")
-        environment.logger.log("Download:      " + xcode.links!.download!.url.absoluteString)
-        environment.logger.log("Release Notes: " + xcode.links!.notes!.url.absoluteString)
+        downloadLink.map {
+            environment.logger.log("Download:      " + $0)
+        }
+        notesLink.map {
+            environment.logger.log("Release Notes: " + $0)
+        }
     }
 
     public func installedXcodes(shouldUpdate: Bool) async throws {
@@ -573,9 +574,12 @@ extension Core {
 
         switch version {
         case let .version(version):
-            let (fullVersion, betaVersion) = extractVersionParts(from: version)
-            return knownXcodes.filter {
-                filter(xcode: $0, fullVersion: fullVersion, betaVersion: betaVersion, version: version)
+            if let versionParts = VersionParts(rawValue: version) {
+                return knownXcodes.filter {
+                    $0.matching(versionParts)
+                }
+            } else {
+                return knownXcodes
             }
         case .latest:
             return [knownXcodes[0]]
@@ -587,7 +591,7 @@ extension Core {
         if let version = version {
             let (fullVersion, betaVersion) = extractVersionParts(from: version)
             xcodesApplications = xcodesApplications.filter {
-                filter(xcode: $0.xcode, fullVersion: fullVersion, betaVersion: betaVersion, version: version)
+                $0.xcode.matching(fullVersion: fullVersion, betaVersion: betaVersion, version: version)
             }
         }
         return xcodesApplications
@@ -607,23 +611,6 @@ extension Core {
             }
         }
         return (fullVersion, betaVersion)
-    }
-
-    private func filter(xcode: Xcode, fullVersion: String?, betaVersion: Int?, version: String) -> Bool {
-        if let betaVersion = betaVersion {
-            let versionNumberHaveSamePrefix = xcode.version.number?.lowercased()
-                .hasPrefix(fullVersion ?? version) == true
-            let betaVersionsAreSame: Bool = {
-                guard case let .beta(version) = xcode.version.release else { return false }
-                return version == betaVersion
-            }()
-            let areSameVersions = xcode.version.build?.lowercased() == version
-
-            return versionNumberHaveSamePrefix && betaVersionsAreSame || areSameVersions
-        } else {
-            return xcode.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true ||
-                xcode.version.build?.lowercased() == version
-        }
     }
 
     private func chooseXcode(version: XcodeVersion, from xcodes: [Xcode], prompt: String) -> Xcode? {
@@ -831,5 +818,40 @@ extension InstalledXcode {
             components.append("RC \(version)")
         }
         return components.joined(separator: " ")
+    }
+}
+
+extension Xcode {
+    func matching(_ versionParts: VersionParts) -> Bool {
+        guard let parts = version.number?.split(separator: ".") else {
+            return false
+        }
+
+        let majorStr = parts[safe: 0].map(String.init)
+        guard let major = majorStr.flatMap(Int.init) else {
+            return false
+        }
+        let minor = parts[safe: 1].flatMap { Int(String($0)) } ?? 0
+        let patch = parts[safe: 2].flatMap { Int(String($0)) }
+
+        let p = VersionParts(major: major, minor: minor, patch: patch, type: version.release.versionType)
+        return p == versionParts
+    }
+
+    func matching(fullVersion: String?, betaVersion: Int?, version: String) -> Bool {
+        if let betaVersion = betaVersion {
+            let versionNumberHaveSamePrefix = self.version.number?.lowercased()
+                .hasPrefix(fullVersion ?? version) == true
+            let betaVersionsAreSame: Bool = {
+                guard case let .beta(version) = self.version.release else { return false }
+                return version == betaVersion
+            }()
+            let areSameVersions = self.version.build?.lowercased() == version
+
+            return versionNumberHaveSamePrefix && betaVersionsAreSame || areSameVersions
+        } else {
+            return self.version.number?.lowercased().hasPrefix(fullVersion ?? version) == true ||
+            self.version.build?.lowercased() == version
+        }
     }
 }

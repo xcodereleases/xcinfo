@@ -8,6 +8,8 @@ import Foundation
 import Rainbow
 import XCIFoundation
 import XCUnxip
+import CLISpinner
+//import Signals
 
 class Extractor {
     struct ExtractionError: LocalizedError {
@@ -35,6 +37,7 @@ class Extractor {
 
     private let logger: Logger
     private var container: PKSignedContainer!
+    private static let spinner = Spinner(pattern: .dots2)
 
     init(forReadingFromContainerAt url: URL, destination: URL, appFilename: String?, logger: Logger) {
         source = url
@@ -51,7 +54,15 @@ class Extractor {
         let target = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.ensureFolderExists(target)
 
+//        Signals.trap(signal: .int) { _ in
+//            Extractor.spinner.unhideCursor()
+//            exit(0)
+//        }
+
+        Self.spinner.start()
         try await Unxip(options: .init(input: source, output: target)).extract()
+        Self.spinner.stopAndClear()
+
         logger.success("Done extracting: \(target.path)")
 
         if let applicationURL = moveToDestinationFolder(tempFolder: target) {

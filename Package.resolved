@@ -10,6 +10,15 @@
       }
     },
     {
+      "identity" : "clispinner",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/trispo/CLISpinner",
+      "state" : {
+        "branch" : "main",
+        "revision" : "ffd547a8f7d1e2acbf65bbc49a35966f7d75f9d9"
+      }
+    },
+    {
       "identity" : "data",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/xcodereleases/data.git",
@@ -59,8 +68,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "f3c9084a71ef4376f2fabbdf1d3d90a49f1fabdb",
-        "version" : "1.1.2"
+        "revision" : "fee6933f37fde9a5e12a1e4aeaa93fe60116ff2a",
+        "version" : "1.2.2"
       }
     }
   ],
