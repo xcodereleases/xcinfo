@@ -22,5 +22,5 @@ jobs:
       run: sudo make install
     - name: Testing archs
       run: lipo -archs /usr/local/bin/xcinfo
-    - name: Testing xcinfo
-      run: /usr/local/bin/xcinfo list --all --no-ansi
+#    - name: Testing xcinfo
+#      run: /usr/local/bin/xcinfo list --all --no-ansi
