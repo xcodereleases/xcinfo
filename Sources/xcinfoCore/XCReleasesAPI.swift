@@ -376,3 +376,22 @@ extension OperatingSystemVersion {
         "\(majorVersion).\(minorVersion).\(patchVersion)"
     }
 }
+
+extension Release {
+    var versionType: VersionParts.VersionType {
+        switch self {
+        case .gm:
+            return .gm("")
+        case .gmSeed(let seed):
+            return .gm("Seed \(seed)")
+        case .rc(let rc):
+            return .rc(String(rc))
+        case .beta(let beta):
+            return .beta(String(beta))
+        case .dp(let dp):
+            return .dp(String(dp))
+        case .release:
+            return .release
+        }
+    }
+}
