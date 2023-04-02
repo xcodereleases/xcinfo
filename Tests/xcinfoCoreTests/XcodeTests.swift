@@ -23,4 +23,58 @@ final class XcodeTests: XCTestCase {
         let xcode6 = Xcode(version: Version("12345", "12", .gmSeed(3)), date: (1, 3, 2021), requires: "FOO")
         XCTAssertEqual("Xcode_12_gmseed_3.app", xcode6.filename)
     }
+
+    func testVersionParts() throws {
+        let versions = [
+            "14.3",
+            "14.3 RC 2",
+            "14.0.1",
+            "11.6 GM",
+            "11.3.1 GM",
+            "11.2.1 GM Seed 1",
+            "8.3 Beta 3",
+            "5.1 DP 2",
+        ]
+
+        for versionString in versions {
+            let parts = VersionParts(rawValue: versionString)
+            XCTAssertEqual(versionString.expectedParts, parts)
+        }
+    }
+}
+
+extension String {
+    var expectedParts: VersionParts? {
+        let splitted = split(separator: " ")
+        guard let versionParts = splitted.first?.split(separator: ".") else {
+            return nil
+        }
+        guard let majorString = versionParts.first, let major = Int(majorString) else {
+            return nil
+        }
+        let minor = versionParts[safe: 1].flatMap { Int($0) } ?? 0
+        let patch = versionParts[safe: 2].flatMap { Int($0) }
+
+        let remainingParts = splitted.dropFirst()
+        let versionType: VersionParts.VersionType
+        if let type = remainingParts.first {
+            switch type.lowercased() {
+            case "rc":
+                versionType = .rc(remainingParts.dropFirst().joined(separator: " "))
+            case "dp":
+                versionType = .dp(remainingParts.dropFirst().joined(separator: " "))
+            case "beta":
+                versionType = .beta(remainingParts.dropFirst().joined(separator: " "))
+            case "gm":
+                versionType = .gm(remainingParts.dropFirst().joined(separator: " "))
+            default:
+                fatalError()
+            }
+        } else {
+            versionType = .release
+        }
+
+
+        return .init(major: major, minor: minor, patch: patch, type: versionType)
+    }
 }

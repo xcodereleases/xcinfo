@@ -116,16 +116,6 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "XCIFoundationTests"
-               BuildableName = "XCIFoundationTests"
-               BlueprintName = "XCIFoundationTests"
-               ReferencedContainer = "container:">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
-            skipped = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
                BlueprintIdentifier = "xcinfoCoreTests"
                BuildableName = "xcinfoCoreTests"
                BlueprintName = "xcinfoCoreTests"
@@ -157,7 +147,7 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "install"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "download"
@@ -185,7 +175,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "info"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "latest"
@@ -204,7 +194,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "&quot;15&quot;"
+            argument = "&quot;11.4.1 GM&quot;"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
