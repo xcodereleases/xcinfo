@@ -575,11 +575,14 @@ extension Core {
         switch version {
         case let .version(version):
             if let versionParts = VersionParts(rawValue: version) {
-                return knownXcodes.filter {
+                let result = knownXcodes.filter {
                     $0.matching(versionParts)
                 }
+                return result
             } else {
-                return knownXcodes
+                return knownXcodes.filter { xcode in
+                    xcode.version.build?.hasPrefix(version) ?? false
+                }
             }
         case .latest:
             return [knownXcodes[0]]
@@ -831,11 +834,23 @@ extension Xcode {
         guard let major = majorStr.flatMap(Int.init) else {
             return false
         }
-        let minor = parts[safe: 1].flatMap { Int(String($0)) } ?? 0
+        let minor = parts[safe: 1].flatMap { Int(String($0)) }
         let patch = parts[safe: 2].flatMap { Int(String($0)) }
 
         let p = VersionParts(major: major, minor: minor, patch: patch, type: version.release.versionType)
-        return p == versionParts
+        if p.major != versionParts.major { return false }
+        if let pMinor = p.minor, let vMinor = versionParts.minor {
+            if pMinor != vMinor { return false }
+
+            if let pPatch = p.patch, let vPatch = versionParts.patch {
+                if pPatch != vPatch { return false }
+
+                if let pType = p.type, let vType = versionParts.type {
+                    if pType != vType { return false }
+                }
+            }
+        }
+        return true
     }
 
     func matching(fullVersion: String?, betaVersion: Int?, version: String) -> Bool {

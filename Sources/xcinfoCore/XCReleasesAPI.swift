@@ -378,7 +378,7 @@ extension OperatingSystemVersion {
 }
 
 extension Release {
-    var versionType: VersionParts.VersionType {
+    var versionType: VersionParts.VersionType? {
         switch self {
         case .gm:
             return .gm("")
@@ -391,7 +391,7 @@ extension Release {
         case .dp(let dp):
             return .dp(String(dp))
         case .release:
-            return .release
+            return nil
         }
     }
 }

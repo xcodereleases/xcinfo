@@ -1,6 +1,7 @@
 @testable import xcinfoCore
 import XCModel
 import XCTest
+import CustomDump
 
 final class XcodeTests: XCTestCase {
 
@@ -25,56 +26,21 @@ final class XcodeTests: XCTestCase {
     }
 
     func testVersionParts() throws {
-        let versions = [
-            "14.3",
-            "14.3 RC 2",
-            "14.0.1",
-            "11.6 GM",
-            "11.3.1 GM",
-            "11.2.1 GM Seed 1",
-            "8.3 Beta 3",
-            "5.1 DP 2",
+        let versions: [String: VersionParts] = [
+            "14": VersionParts(major: 14),
+            "14.3": VersionParts(major: 14, minor: 3),
+            "14.3 RC 2": VersionParts(major: 14, minor: 3, type: .rc("2")),
+            "14.0.1": VersionParts(major: 14, minor: 0, patch: 1),
+            "11.6 GM": VersionParts(major: 11, minor: 6, type: .gm("")),
+            "11.3.1 GM": VersionParts(major: 11, minor: 3, patch: 1, type: .gm("")),
+            "11.2.1 GM Seed 1": VersionParts(major: 11, minor: 2, patch: 1, type: .gm("Seed 1")),
+            "8.3 Beta 3": VersionParts(major: 8, minor: 3, type: .beta("3")),
+            "5.1 DP 2": VersionParts(major: 5, minor: 1, type: .dp("2")),
         ]
 
-        for versionString in versions {
+        for (versionString, expected) in versions {
             let parts = VersionParts(rawValue: versionString)
-            XCTAssertEqual(versionString.expectedParts, parts)
+            XCTAssertNoDifference(expected, parts, "Failed for \(versionString)")
         }
-    }
-}
-
-extension String {
-    var expectedParts: VersionParts? {
-        let splitted = split(separator: " ")
-        guard let versionParts = splitted.first?.split(separator: ".") else {
-            return nil
-        }
-        guard let majorString = versionParts.first, let major = Int(majorString) else {
-            return nil
-        }
-        let minor = versionParts[safe: 1].flatMap { Int($0) } ?? 0
-        let patch = versionParts[safe: 2].flatMap { Int($0) }
-
-        let remainingParts = splitted.dropFirst()
-        let versionType: VersionParts.VersionType
-        if let type = remainingParts.first {
-            switch type.lowercased() {
-            case "rc":
-                versionType = .rc(remainingParts.dropFirst().joined(separator: " "))
-            case "dp":
-                versionType = .dp(remainingParts.dropFirst().joined(separator: " "))
-            case "beta":
-                versionType = .beta(remainingParts.dropFirst().joined(separator: " "))
-            case "gm":
-                versionType = .gm(remainingParts.dropFirst().joined(separator: " "))
-            default:
-                fatalError()
-            }
-        } else {
-            versionType = .release
-        }
-
-
-        return .init(major: major, minor: minor, patch: patch, type: versionType)
     }
 }

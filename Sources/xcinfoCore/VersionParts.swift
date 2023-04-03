@@ -8,23 +8,21 @@ import RegexBuilder
 
 struct VersionParts: Equatable {
     enum VersionType: Equatable {
-        case release
         case rc(String)
         case dp(String)
         case beta(String)
         case gm(String)
     }
     var major: Int
-    var minor: Int
+    var minor: Int?
     var patch: Int?
-    var type: VersionType
+    var type: VersionType?
 }
 
 extension VersionParts.VersionType {
-    init(type: String?, content: String?) {
+    init?(type: String?, content: String?) {
         guard let type, let content else {
-            self = .release
-            return
+            return nil
         }
         switch type.lowercased() {
         case "beta":
@@ -36,7 +34,7 @@ extension VersionParts.VersionType {
         case "dp":
             self = .dp(content)
         default:
-            self = .release
+            return nil
         }
     }
 }
@@ -49,7 +47,7 @@ extension VersionParts {
 
     static func extractParts(from versionString: String) -> VersionParts? {
         let majorRef = Reference(Int.self)
-        let minorRef = Reference(Int.self)
+        let minorRef = Reference(Int?.self)
         let patchRef = Reference(Int?.self)
         let typeRef = Reference(String?.self)
         let typeString = Reference(String?.self)
@@ -61,11 +59,13 @@ extension VersionParts {
                 Int(major) ?? 0
             }
 
-            "."
-            TryCapture(as: minorRef) {
-                ZeroOrMore(.digit)
-            } transform: { minor in
-                Int(minor) ?? 0
+            Optionally {
+                "."
+                TryCapture(as: minorRef) {
+                    ZeroOrMore(.digit)
+                } transform: { minor in
+                    Int(minor)
+                }
             }
 
             Optionally {

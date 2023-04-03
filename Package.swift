@@ -21,6 +21,7 @@ let package = Package(
         .package(url: "https://github.com/xcodereleases/data.git", branch: "master"),
         .package(url: "https://github.com/getGuaka/Prompt.git", from: "0.0.0"),
         .package(url: "https://github.com/trispo/CLISpinner", branch: "main"),
+        .package(url: "https://github.com/pointfreeco/swift-custom-dump", from: "0.9.1"),
 //        .package(url: "https://github.com/Kitura/BlueSignals.git", from: "2.0.1")
     ],
     targets: [
@@ -61,7 +62,7 @@ let package = Package(
         ),
         .testTarget(
             name: "xcinfoCoreTests",
-            dependencies: ["xcinfoCore", "Prompt", "XCUnxip"],
+            dependencies: ["xcinfoCore", "Prompt", "XCUnxip", .product(name: "CustomDump", package: "swift-custom-dump")],
             linkerSettings: [
                 LinkerSetting.linkedFramework("PackageKit"),
                 LinkerSetting.unsafeFlags(["-F/System/Library/PrivateFrameworks/"]),
