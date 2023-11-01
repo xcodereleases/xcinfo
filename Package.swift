@@ -16,12 +16,12 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.2.2"),
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.2.3"),
         .package(url: "https://github.com/onevcat/Rainbow", from: "4.0.1"),
         .package(url: "https://github.com/xcodereleases/data.git", branch: "master"),
         .package(url: "https://github.com/getGuaka/Prompt.git", from: "0.0.0"),
-        .package(url: "https://github.com/trispo/CLISpinner", branch: "main"),
-        .package(url: "https://github.com/pointfreeco/swift-custom-dump", from: "0.9.1"),
+        .package(url: "https://github.com/pointfreeco/swift-custom-dump", from: "1.1.0"),
+        .package(url: "https://github.com/saagarjha/unxip", from: "3.0.0"),
 //        .package(url: "https://github.com/Kitura/BlueSignals.git", from: "2.0.1")
     ],
     targets: [
@@ -55,8 +55,7 @@ let package = Package(
                 "OlympUs",
                 "XCIFoundation",
                 "XCUnxip",
-                "CLISpinner",
-//                .product(name: "Signals", package: "BlueSignals"),
+                .product(name: "libunxip", package: "unxip"),
                 .product(name: "XCModel", package: "data"),
             ]
         ),

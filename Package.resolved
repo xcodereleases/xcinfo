@@ -10,15 +10,6 @@
       }
     },
     {
-      "identity" : "clispinner",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/trispo/CLISpinner",
-      "state" : {
-        "branch" : "main",
-        "revision" : "ffd547a8f7d1e2acbf65bbc49a35966f7d75f9d9"
-      }
-    },
-    {
       "identity" : "data",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/xcodereleases/data.git",
@@ -68,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "fee6933f37fde9a5e12a1e4aeaa93fe60116ff2a",
-        "version" : "1.2.2"
+        "revision" : "8f4d2753f0e4778c76d5f05ad16c74f707390531",
+        "version" : "1.2.3"
       }
     },
     {
@@ -77,8 +68,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-custom-dump",
       "state" : {
-        "revision" : "de8ba65649e7ee317b9daf27dd5eebf34bd4be57",
-        "version" : "0.9.1"
+        "revision" : "3efbfba0e4e56c7187cc19137ee16b7c95346b79",
+        "version" : "1.1.0"
+      }
+    },
+    {
+      "identity" : "unxip",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/saagarjha/unxip",
+      "state" : {
+        "revision" : "aeb6160a8a8e8b2bdc2e0b9f747a4b941046c624",
+        "version" : "3.0.0"
       }
     },
     {
@@ -86,8 +86,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
       "state" : {
-        "revision" : "ab8c9f45843694dd16be4297e6d44c0634fd9913",
-        "version" : "0.8.4"
+        "revision" : "23cbf2294e350076ea4dbd7d5d047c1e76b03631",
+        "version" : "1.0.2"
       }
     }
   ],

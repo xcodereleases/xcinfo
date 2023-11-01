@@ -39,6 +39,6 @@ extension XCInfo {
 
 extension ExtractionOptions {
     var options: Core.ExtractionOptions {
-        .init(destination: installationDirectory, useExperimentalUnxip: useExperimentalUnxip)
+        .init(destination: installationDirectory, useLegacyUnxip: useSystemUnxip)
     }
 }

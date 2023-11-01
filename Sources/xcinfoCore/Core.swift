@@ -20,6 +20,7 @@ public enum CoreError: LocalizedError {
     case codesignVerificationFailed(URL)
     case incorrectSuperUserPassword
     case uninstallationFailed(String)
+    case invalidExtractionOutputURL(URL)
 
     public var errorDescription: String? {
         switch self {
@@ -43,6 +44,8 @@ public enum CoreError: LocalizedError {
             return "Code sign could not verify Xcode at \(url.path)"
         case .incorrectSuperUserPassword:
             return ""
+        case .invalidExtractionOutputURL(let output):
+            return "Failed to access output directory at \(output.path)."
         }
     }
 }
@@ -72,13 +75,13 @@ public class Core {
     }
 
     public struct ExtractionOptions {
-        public init(destination: URL, useExperimentalUnxip: Bool = false) {
+        public init(destination: URL, useLegacyUnxip: Bool = false) {
             self.destination = destination
-            self.useExperimentalUnxip = useExperimentalUnxip
+            self.useLegacyUnxip = useLegacyUnxip
         }
 
         public var destination: URL
-        public var useExperimentalUnxip: Bool
+        public var useLegacyUnxip: Bool
     }
 
     public struct InstallationOptions {
@@ -333,10 +336,10 @@ public class Core {
         )
         do {
             let destinationURL: URL
-            if options.useExperimentalUnxip {
-                destinationURL = try await extractor.extractExperimental()
-            } else {
+            if options.useLegacyUnxip {
                 destinationURL = try await extractor.extract()
+            } else {
+                destinationURL = try await extractor.extractExperimental()
             }
             environment.logger.log("XIP successfully extracted to \(destinationURL.path)")
             guard let xcode = xcode else { return nil }

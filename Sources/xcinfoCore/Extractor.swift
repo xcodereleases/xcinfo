@@ -8,8 +8,6 @@ import Foundation
 import Rainbow
 import XCIFoundation
 import XCUnxip
-import CLISpinner
-//import Signals
 
 class Extractor {
     struct ExtractionError: LocalizedError {
@@ -37,7 +35,6 @@ class Extractor {
 
     private let logger: Logger
     private var container: PKSignedContainer!
-    private static let spinner = Spinner(pattern: .dots2)
 
     init(forReadingFromContainerAt url: URL, destination: URL, appFilename: String?, logger: Logger) {
         source = url
@@ -54,14 +51,26 @@ class Extractor {
         let target = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.ensureFolderExists(target)
 
-//        Signals.trap(signal: .int) { _ in
-//            Extractor.spinner.unhideCursor()
-//            exit(0)
-//        }
+        var previouslyDisplayedNonANSIProgress = -1
+        var progressDisplay = ProgressDisplay(ratio: 0, width: 20)
+        logger.log("")
+        logger.verbose("Extracting xip to \(target.path)", onSameLine: true)
 
-        Self.spinner.start()
-        try await Unxip(options: .init(input: source, output: target)).extract()
-        Self.spinner.stopAndClear()
+        try await Unxip(input: source, output: target, logger: logger)
+            .extract { [input = source.lastPathComponent, logger] progress in
+                progressDisplay.ratio = progress
+                if Rainbow.enabled && !logger.isVerbose {
+                    logger.log("\(progressDisplay.representation)", onSameLine: true)
+                } else {
+                    let percent = Int(progress * 100)
+                    if percent.isMultiple(of: 5), previouslyDisplayedNonANSIProgress != Int(progress) {
+                        if progress < 1 {
+                            logger.log("Expanding items from \(input): \(percent) %")
+                        }
+                        previouslyDisplayedNonANSIProgress = percent
+                    }
+                }
+            }
 
         logger.success("Done extracting: \(target.path)")
 
@@ -75,7 +84,8 @@ class Extractor {
     func start() -> Future<URL, Error> {
         var previouslyDisplayedNonANSIProgress = -1
 
-        return Future { promise in
+        return Future { [weak self] promise in
+            guard let self else { return }
             do {
                 self.container = try PKSignedContainer(forReadingFromContainerAt: self.source)
             } catch {

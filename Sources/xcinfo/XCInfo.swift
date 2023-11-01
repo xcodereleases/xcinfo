@@ -77,9 +77,9 @@ struct ExtractionOptions: ParsableArguments {
     var installationDirectory: URL = .init(fileURLWithPath: "/Applications")
 
     @Flag(
-        help: "Uses experimental (way faster) version of unxip."
+        help: "Uses system (much slower) version of unxip."
     )
-    var useExperimentalUnxip: Bool = false
+    var useSystemUnxip: Bool = false
 }
 
 struct InstallationOptions: ParsableArguments {

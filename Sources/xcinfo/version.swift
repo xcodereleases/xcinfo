@@ -3,4 +3,4 @@
 //  MIT license - see LICENSE.md
 //
 
-let version = "1.0.2"
+let version = "1.1.0"
